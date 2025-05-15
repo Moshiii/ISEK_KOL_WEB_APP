@@ -122,6 +122,7 @@ agents = [
     }
 ]
 
+# TODO dynamic generate tasks
 task_templates = {
     "twitter": [
         {
@@ -194,38 +195,39 @@ task_templates = {
         }
     ]
 }
-
+# # TODO add random delay 1000-2000 ms or call API to generate message
+# TODO self intro should Have a demonstration about adding multiple roles to the chat room
 conversation_scripts = {
     "twitter": [
         {
             "agentId": "coordinator",
             "messageTemplate": "团队，我们收到了一个新的推特活动请求：'{request}'。让我们开始规划并准备好我们的推特助手。",
-            "delay": 1000
+            "delay": 1033
         },
         {
             "agentId": "researcher",
             "messageTemplate": "我来分析目标受众的推特行为和互动模式。",
-            "delay": 2000
+            "delay": 2192
         },
         {
             "agentId": "coordinator",
             "messageTemplate": "很好。我们需要制作能引起推特用户共鸣的内容和视觉效果。",
-            "delay": 2500
+            "delay": 2320
         },
         {
             "agentId": "writer",
             "messageTemplate": "我会创作能提高互动率的推文，同时保持品牌调性。",
-            "delay": 2000
+            "delay": 1325
         },
         {
             "agentId": "designer",
             "messageTemplate": "我来负责制作适合推特平台的吸引眼球的视觉内容。",
-            "delay": 2200
+            "delay": 1782
         },
         {
             "agentId": "coordinator",
             "messageTemplate": "完美。我会协调推特助手执行计划。以下是任务分配：",
-            "delay": 3000
+            "delay": 1209
         }
     ]
 }

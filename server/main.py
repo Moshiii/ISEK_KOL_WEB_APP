@@ -6,6 +6,15 @@ from datetime import datetime
 import json
 import asyncio
 import uuid
+import openai
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+# Configure OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
 
@@ -126,25 +135,51 @@ agents = [
     }
 ]
 
-# Information gathering questions
-info_gathering_questions = [
-    "能详细描述一下你的产品或服务的主要特点吗？",
-    "你希望这次推特活动达到什么具体目标？比如增加多少粉丝或互动量？",
-    "你的目标受众群体是谁？他们的年龄、兴趣和行为特征是什么？",
-    "你有没有特定的品牌语调或风格指南需要我们遵循？",
-    "你希望在推文中包含什么类型的视觉内容？比如产品图片、信息图表等？"
-]
-
-def generate_coordinator_response(user_input: str, campaign_id: str) -> str:
-    # TODO: Replace with actual OpenAI API call
-    # For now, return a dummy response based on the current info gathering stage
+async def get_openai_response(user_input: str, campaign_id: str) -> str:
     campaign = campaigns[campaign_id]
-    question_count = len([m for m in campaign["messages"] if m["agentId"] == "coordinator" and "?" in m["content"]])
+    conversation_history = []
     
-    if question_count >= len(info_gathering_questions):
-        return "非常感谢你提供的信息！我认为我们已经收集到足够的细节来开始规划这次推特活动了。我现在就开始分配任务给团队成员。"
+    # Build conversation history
+    for msg in campaign["messages"]:
+        role = "assistant" if msg["agentId"] == "coordinator" else "user"
+        conversation_history.append({
+            "role": role,
+            "content": msg["content"]
+        })
     
-    return info_gathering_questions[question_count]
+    # Add current user input
+    conversation_history.append({
+        "role": "user",
+        "content": user_input
+    })
+    
+    # Add system message to guide the AI's behavior
+    system_message = """你是Alex，一个专业的推特活动协调员。你的任务是：
+    1. 收集足够的信息来策划推特活动
+    2. 提出具体的问题来了解：
+       - 产品/服务特点
+       - 目标受众
+       - 活动目标
+       - 品牌调性
+       - 视觉需求
+    3. 当收集到足够信息时，回复："非常感谢你提供的信息！我认为我们已经收集到足够的细节来开始规划这次推特活动了。我现在就开始分配任务给团队成员。"
+    
+    请使用专业但友好的语气，每次只问一个问题。"""
+    
+    try:
+        response = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_message},
+                *conversation_history
+            ],
+            temperature=0.7,
+            max_tokens=300
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"OpenAI API error: {e}")
+        return "抱歉，我现在遇到了一些技术问题。让我们稍后继续我们的对话。"
 
 def generate_id() -> str:
     return str(uuid.uuid4())
@@ -166,7 +201,7 @@ async def create_campaign(campaign: CampaignRequest):
         initial_message = {
             "id": generate_id(),
             "agentId": "coordinator",
-            "content": "你好！我是Alex，你的推特活动协调员。" + info_gathering_questions[0],
+            "content": "你好！我是Alex，你的推特活动协调员。能详细描述一下你的产品或服务的主要特点吗？",
             "timestamp": datetime.now().isoformat(),
             "type": "message"
         }
@@ -213,8 +248,8 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
     }
     campaigns[campaign_id]["messages"].append(user_message)
     
-    # Generate coordinator's response
-    coordinator_response = generate_coordinator_response(message.content, campaign_id)
+    # Get AI response
+    coordinator_response = await get_openai_response(message.content, campaign_id)
     coordinator_message = {
         "id": generate_id(),
         "agentId": "coordinator",

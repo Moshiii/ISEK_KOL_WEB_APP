@@ -34,7 +34,7 @@ export interface Message {
   agentId: string;
   content: string;
   timestamp: Date;
-  type: 'message' | 'task-assignment' | 'task-completion' | 'user-message';
+  type: 'message' | 'task-assignment' | 'task-completion';
   taskId?: string;
 }
 
@@ -46,7 +46,6 @@ export interface Campaign {
   status: 'planning' | 'in-progress' | 'completed';
   createdAt: Date;
   metrics: CampaignMetrics;
-  details: CampaignDetails;
 }
 
 export interface TwitterAccount {
@@ -63,17 +62,4 @@ export interface CampaignMetrics {
   totalReplies: number;
   totalRetweets: number;
   twitterAccounts: TwitterAccount[];
-}
-
-export interface CampaignDetails {
-  slogan?: string;
-  productDescription?: string;
-  productImages?: string[];
-  targetAudience?: string;
-  expectedMetrics?: {
-    posts?: number;
-    likes?: number;
-    replies?: number;
-    retweets?: number;
-  };
 }

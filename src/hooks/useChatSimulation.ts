@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Message, Task, Campaign, Agent, CampaignMetrics, CampaignDetails } from '../types';
+import { Message, Task, Campaign, Agent, CampaignMetrics } from '../types';
 import { agents, getAgentById } from '../data/agents';
 import { createCampaign } from '../api';
 
@@ -8,29 +8,6 @@ const TWITTER_HANDLES = [
   'digital_marketer',
   'social_guru',
   'content_creator'
-];
-
-const CAMPAIGN_QUESTIONS = [
-  {
-    id: 'slogan',
-    question: "请分享您的活动口号或主要信息是什么？",
-    field: 'slogan'
-  },
-  {
-    id: 'productDescription',
-    question: "能详细描述一下您的产品或服务吗？",
-    field: 'productDescription'
-  },
-  {
-    id: 'targetAudience',
-    question: "您的目标受众是谁？请描述他们的特征和兴趣。",
-    field: 'targetAudience'
-  },
-  {
-    id: 'expectedMetrics',
-    question: "您对这次活动有什么具体的期望目标吗？比如互动数量、转发数等。",
-    field: 'expectedMetrics'
-  }
 ];
 
 function generateId(): string {
@@ -52,8 +29,6 @@ export function useChatSimulation() {
   const [typingAgent, setTypingAgent] = useState<Agent | null>(null);
   const [status, setStatus] = useState<'idle' | 'planning' | 'in-progress' | 'completed'>('idle');
   const [metrics, setMetrics] = useState<CampaignMetrics>(initialMetrics);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
-  const [campaignDetails, setCampaignDetails] = useState<CampaignDetails>({});
 
   const resetChat = () => {
     setCampaign(null);
@@ -62,70 +37,70 @@ export function useChatSimulation() {
     setTypingAgent(null);
     setStatus('idle');
     setMetrics(initialMetrics);
-    setCurrentQuestionIndex(-1);
-    setCampaignDetails({});
   };
 
-  const addMessage = (content: string, type: Message['type'] = 'message', agentId: string = 'coordinator') => {
-    const newMessage: Message = {
-      id: generateId(),
-      agentId,
-      content,
-      timestamp: new Date(),
-      type
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const handleUserResponse = (response: string) => {
-    // Add user's message to chat
-    addMessage(response, 'user-message', 'user');
-
-    // Update campaign details based on current question
-    const currentQuestion = CAMPAIGN_QUESTIONS[currentQuestionIndex];
-    setCampaignDetails(prev => ({
-      ...prev,
-      [currentQuestion.field]: response
-    }));
-
-    // Move to next question or start campaign
-    if (currentQuestionIndex < CAMPAIGN_QUESTIONS.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+  const updateMetrics = () => {
+    setMetrics(prev => {
+      const newAccounts = [...prev.twitterAccounts];
       
-      // Add Alex's next question after a delay
-      setTimeout(() => {
-        setTypingAgent(getAgentById('coordinator'));
-        setTimeout(() => {
-          addMessage(CAMPAIGN_QUESTIONS[currentQuestionIndex + 1].question);
-          setTypingAgent(null);
-        }, 1500);
-      }, 1000);
-    } else {
-      // Start the campaign with gathered details
-      initiateMainCampaign();
-    }
+      if (Math.random() > 0.7 && newAccounts.length < TWITTER_HANDLES.length) {
+        const unusedHandles = TWITTER_HANDLES.filter(
+          handle => !newAccounts.some(acc => acc.handle === handle)
+        );
+        if (unusedHandles.length > 0) {
+          const newHandle = unusedHandles[Math.floor(Math.random() * unusedHandles.length)];
+          newAccounts.push({
+            handle: newHandle,
+            postsCount: 0,
+            likesCount: 0,
+            repliesCount: 0,
+            retweetsCount: 0
+          });
+        }
+      }
+
+      const updatedAccounts = newAccounts.map(account => ({
+        ...account,
+        postsCount: account.postsCount + Math.floor(Math.random() * 2),
+        likesCount: account.likesCount + Math.floor(Math.random() * 5),
+        repliesCount: account.repliesCount + Math.floor(Math.random() * 3),
+        retweetsCount: account.retweetsCount + Math.floor(Math.random() * 2)
+      }));
+
+      const totals = updatedAccounts.reduce((acc, account) => ({
+        totalPosts: acc.totalPosts + account.postsCount,
+        totalLikes: acc.totalLikes + account.likesCount,
+        totalReplies: acc.totalReplies + account.repliesCount,
+        totalRetweets: acc.totalRetweets + account.retweetsCount
+      }), {
+        totalPosts: 0,
+        totalLikes: 0,
+        totalReplies: 0,
+        totalRetweets: 0
+      });
+
+      return {
+        ...totals,
+        twitterAccounts: updatedAccounts
+      };
+    });
   };
 
-  const initiateMainCampaign = async () => {
+  const startCampaign = async (request: string) => {
     try {
+      resetChat();
       setStatus('planning');
       
-      const result = await createCampaign(JSON.stringify({
-        request: messages[0].content,
-        details: campaignDetails
-      }));
+      const result = await createCampaign(request);
       
       if (result.status === 'success') {
         const { campaign: newCampaign } = result;
         
         setCampaign(newCampaign);
-        setMessages(prev => [
-          ...prev,
-          ...newCampaign.messages.map(msg => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
-        ]);
+        setMessages(newCampaign.messages.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })));
         setTasks(newCampaign.tasks.map(task => ({
           ...task,
           createdAt: new Date(task.createdAt)
@@ -217,78 +192,6 @@ export function useChatSimulation() {
     }
   };
 
-  const startCampaign = (request: string) => {
-    resetChat();
-    
-    // Add user's initial request to messages
-    addMessage(request, 'user-message', 'user');
-    
-    // Start the conversation with Alex
-    setTimeout(() => {
-      setTypingAgent(getAgentById('coordinator'));
-      setTimeout(() => {
-        addMessage("感谢您的请求！为了更好地规划这次推特活动，我需要了解一些具体细节。");
-        setTypingAgent(null);
-        
-        setTimeout(() => {
-          setTypingAgent(getAgentById('coordinator'));
-          setTimeout(() => {
-            setCurrentQuestionIndex(0);
-            addMessage(CAMPAIGN_QUESTIONS[0].question);
-            setTypingAgent(null);
-          }, 1500);
-        }, 1000);
-      }, 1500);
-    }, 1000);
-  };
-
-  const updateMetrics = () => {
-    setMetrics(prev => {
-      const newAccounts = [...prev.twitterAccounts];
-      
-      if (Math.random() > 0.7 && newAccounts.length < TWITTER_HANDLES.length) {
-        const unusedHandles = TWITTER_HANDLES.filter(
-          handle => !newAccounts.some(acc => acc.handle === handle)
-        );
-        if (unusedHandles.length > 0) {
-          const newHandle = unusedHandles[Math.floor(Math.random() * unusedHandles.length)];
-          newAccounts.push({
-            handle: newHandle,
-            postsCount: 0,
-            likesCount: 0,
-            repliesCount: 0,
-            retweetsCount: 0
-          });
-        }
-      }
-
-      const updatedAccounts = newAccounts.map(account => ({
-        ...account,
-        postsCount: account.postsCount + Math.floor(Math.random() * 2),
-        likesCount: account.likesCount + Math.floor(Math.random() * 5),
-        repliesCount: account.repliesCount + Math.floor(Math.random() * 3),
-        retweetsCount: account.retweetsCount + Math.floor(Math.random() * 2)
-      }));
-
-      const totals = updatedAccounts.reduce((acc, account) => ({
-        totalPosts: acc.totalPosts + account.postsCount,
-        totalLikes: acc.totalLikes + account.likesCount,
-        totalReplies: acc.totalReplies + account.repliesCount,
-        totalRetweets: acc.totalRetweets + account.retweetsCount
-      }), {
-        totalPosts: 0,
-        totalLikes: 0,
-        totalReplies: 0,
-        totalRetweets: 0
-      });
-
-      return {
-        ...totals,
-        twitterAccounts: updatedAccounts
-      };
-    });
-  };
-
   const getTaskCompletionDetail = (task: Task): string => {
     switch (task.title) {
       case '受众分析':
@@ -311,7 +214,6 @@ export function useChatSimulation() {
     status,
     metrics,
     startCampaign,
-    handleUserResponse,
     resetChat
   };
 }

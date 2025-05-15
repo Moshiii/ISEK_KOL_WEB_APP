@@ -12,7 +12,7 @@ const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (request.trim() && !isProcessing) {
-      onSubmit(request.trim());
+      onSubmit(request);
       setRequest('');
     }
   };
@@ -45,7 +45,7 @@ const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing }) => {
                 : 'gradient-primary text-white hover:opacity-90'
             }`}
           >
-            {isProcessing ? '处理中...' : '发送'}
+            {isProcessing ? '处理中...' : '提交请求'}
             <Send size={18} />
           </button>
         </form>

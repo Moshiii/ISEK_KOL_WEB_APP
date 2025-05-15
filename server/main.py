@@ -136,16 +136,17 @@ agents = [
 ]
 
 async def get_openai_response(user_input: str, campaign_id: str) -> str:
-    campaign = campaigns[campaign_id]
+    # Build conversation history
     conversation_history = []
     
-    # Build conversation history
-    for msg in campaign["messages"]:
-        role = "assistant" if msg["agentId"] == "coordinator" else "user"
-        conversation_history.append({
-            "role": role,
-            "content": msg["content"]
-        })
+    if campaign_id in campaigns:
+        campaign = campaigns[campaign_id]
+        for msg in campaign["messages"]:
+            role = "assistant" if msg["agentId"] == "coordinator" else "user"
+            conversation_history.append({
+                "role": role,
+                "content": msg["content"]
+            })
     
     # Add current user input
     conversation_history.append({
@@ -155,20 +156,20 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
     
     # Add system message to guide the AI's behavior
     system_message = """你是Alex，一个专业的推特活动协调员。你的任务是：
-    1. 收集足够的信息来策划推特活动
-    2. 提出具体的问题来了解：
+    1. 分析用户提供的信息，判断是否足够开始活动
+    2. 如果信息不足，提出具体的问题来了解：
        - 产品/服务特点
        - 目标受众
        - 活动目标
        - 品牌调性
        - 视觉需求
-    3. 当收集到足够信息时，回复："非常感谢你提供的信息！我认为我们已经收集到足够的细节来开始规划这次推特活动了。我现在就开始分配任务给团队成员。"
+    3. 如果信息已经足够，回复："非常感谢你提供的信息！我认为我们已经收集到足够的细节来开始规划这次推特活动了。我现在就开始分配任务给团队成员。"
     
-    请使用专业但友好的语气，每次只问一个问题。"""
+    请使用专业但友好的语气，每次只问一个问题。如果用户第一次就提供了完整信息，直接进入第3步。"""
     
     try:
         response = openai.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": system_message},
                 *conversation_history
@@ -197,11 +198,21 @@ async def create_campaign(campaign: CampaignRequest):
     try:
         campaign_id = generate_id()
         
-        # Create initial campaign with just the first coordinator message
-        initial_message = {
+        # Add user's initial message first
+        user_message = {
+            "id": generate_id(),
+            "agentId": "user",
+            "content": campaign.request,
+            "timestamp": datetime.now().isoformat(),
+            "type": "message"
+        }
+        
+        # Get initial AI response
+        coordinator_response = await get_openai_response(campaign.request, campaign_id)
+        coordinator_message = {
             "id": generate_id(),
             "agentId": "coordinator",
-            "content": "你好！我是Alex，你的推特活动协调员。能详细描述一下你的产品或服务的主要特点吗？",
+            "content": coordinator_response,
             "timestamp": datetime.now().isoformat(),
             "type": "message"
         }
@@ -210,7 +221,7 @@ async def create_campaign(campaign: CampaignRequest):
             "id": campaign_id,
             "request": campaign.request,
             "tasks": [],
-            "messages": [initial_message],
+            "messages": [user_message, coordinator_message],
             "status": "planning",
             "createdAt": datetime.now().isoformat(),
             "metrics": {

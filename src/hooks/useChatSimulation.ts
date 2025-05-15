@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Message, Task, Campaign, Agent, CampaignMetrics } from '../types';
 import { agents, getAgentById } from '../data/agents';
-import { createCampaign } from '../api';
+import { createCampaign, sendUserMessage } from '../api';
 
 const TWITTER_HANDLES = [
   'tech_influencer',
@@ -91,110 +91,23 @@ export function useChatSimulation() {
       resetChat();
       setStatus('planning');
       
-      // Add user message first
-      const userMessage: Message = {
-        id: generateId(),
-        agentId: 'user',
-        content: request,
-        timestamp: new Date(),
-        type: 'user-message'
-      };
-      setMessages([userMessage]);
-      
       const result = await createCampaign(request);
       
       if (result.status === 'success') {
         const { campaign: newCampaign } = result;
         
         setCampaign(newCampaign);
-        setMessages(prev => [...prev, ...newCampaign.messages.map(msg => ({
+        setMessages(newCampaign.messages.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
-        }))]);
-        setTasks(newCampaign.tasks.map(task => ({
-          ...task,
-          createdAt: new Date(task.createdAt)
         })));
         
-        setStatus('in-progress');
-        
-        const metricsInterval = setInterval(updateMetrics, 3000);
-        
-        let taskIndex = 0;
-        const progressTasks = () => {
-          if (taskIndex < newCampaign.tasks.length) {
-            const currentTask = newCampaign.tasks[taskIndex];
-            
-            setTasks(prev => 
-              prev.map(t => 
-                t.id === currentTask.id 
-                  ? {...t, status: 'in-progress'} 
-                  : t
-              )
-            );
-            
-            const agent = getAgentById(currentTask.assignedTo);
-            setTypingAgent(agent);
-            
-            setTimeout(() => {
-              setMessages(prev => [...prev, {
-                id: generateId(),
-                agentId: agent.id,
-                content: `我开始执行${currentTask.title}任务。`,
-                timestamp: new Date(),
-                type: 'message',
-                taskId: currentTask.id
-              }]);
-              setTypingAgent(null);
-              
-              setTimeout(() => {
-                setTasks(prev => 
-                  prev.map(t => 
-                    t.id === currentTask.id 
-                      ? {...t, status: 'completed'} 
-                      : t
-                  )
-                );
-                
-                setTypingAgent(agent);
-                setTimeout(() => {
-                  setMessages(prev => [...prev, {
-                    id: generateId(),
-                    agentId: agent.id,
-                    content: getTaskCompletionDetail(currentTask),
-                    timestamp: new Date(),
-                    type: 'message',
-                    taskId: currentTask.id
-                  }]);
-                  setTypingAgent(null);
-                  
-                  taskIndex++;
-                  if (taskIndex < newCampaign.tasks.length) {
-                    setTimeout(progressTasks, 2000);
-                  } else {
-                    setTimeout(() => {
-                      setTypingAgent(getAgentById('coordinator'));
-                      setTimeout(() => {
-                        setMessages(prev => [...prev, {
-                          id: generateId(),
-                          agentId: 'coordinator',
-                          content: "太棒了！所有任务都已完成。推特活动已准备就绪，可以开始执行了。",
-                          timestamp: new Date(),
-                          type: 'message'
-                        }]);
-                        setTypingAgent(null);
-                        setStatus('completed');
-                        clearInterval(metricsInterval);
-                      }, 2000);
-                    }, 1000);
-                  }
-                }, 1000);
-              }, 5000);
-            }, 1000);
-          }
-        };
-        
-        progressTasks();
+        if (newCampaign.tasks) {
+          setTasks(newCampaign.tasks.map(task => ({
+            ...task,
+            createdAt: new Date(task.createdAt)
+          })));
+        }
       }
     } catch (error) {
       console.error('Failed to start campaign:', error);
@@ -202,18 +115,40 @@ export function useChatSimulation() {
     }
   };
 
-  const getTaskCompletionDetail = (task: Task): string => {
-    switch (task.title) {
-      case '受众分析':
-        return "数据显示目标群体有很强的互动潜力。";
-      case '内容策略':
-        return "推文计划和内容主题已优化以获得最大覆盖。";
-      case '推文文案':
-        return "引人入胜的推文已准备好在我们的推特网络中发布。";
-      case '视觉设计':
-        return "吸引眼球的视觉内容已准备就绪，将提升推文互动率。";
-      default:
-        return "任务已成功完成。";
+  const sendMessage = async (content: string) => {
+    if (!campaign) return;
+    
+    try {
+      setTypingAgent(getAgentById('coordinator'));
+      
+      const updatedCampaign = await sendUserMessage(campaign.id, content);
+      
+      setCampaign(updatedCampaign);
+      setMessages(updatedCampaign.messages.map(msg => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      })));
+      
+      if (updatedCampaign.tasks) {
+        setTasks(updatedCampaign.tasks.map(task => ({
+          ...task,
+          createdAt: new Date(task.createdAt)
+        })));
+        
+        if (updatedCampaign.info_gathering_complete) {
+          setStatus('in-progress');
+          const metricsInterval = setInterval(updateMetrics, 3000);
+          
+          // Clean up interval when component unmounts
+          return () => clearInterval(metricsInterval);
+        }
+      }
+      
+      setTypingAgent(null);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setTypingAgent(null);
+      throw error;
     }
   };
 
@@ -224,6 +159,7 @@ export function useChatSimulation() {
     status,
     metrics,
     startCampaign,
+    sendMessage,
     resetChat
   };
 }

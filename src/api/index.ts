@@ -22,6 +22,22 @@ export async function createCampaign(request: string): Promise<{
   return response.json();
 }
 
+export async function sendUserMessage(campaignId: string, content: string): Promise<Campaign> {
+  const response = await fetch(`${API_URL}/campaign/${campaignId}/message`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send message');
+  }
+
+  return response.json();
+}
+
 export async function getCampaign(campaignId: string): Promise<Campaign> {
   const response = await fetch(`${API_URL}/campaign/${campaignId}`);
   

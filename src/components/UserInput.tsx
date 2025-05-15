@@ -4,9 +4,10 @@ import { Send } from 'lucide-react';
 interface UserInputProps {
   onSubmit: (request: string) => void;
   isProcessing: boolean;
+  placeholder?: string;
 }
 
-const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing }) => {
+const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing, placeholder = "请描述您的推特活动..." }) => {
   const [request, setRequest] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,7 +31,7 @@ const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing }) => {
         <form onSubmit={handleSubmit} className="h-full flex flex-col">
           <textarea
             className="flex-1 w-full p-4 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-[#5370FF] focus:border-[#5370FF] transition-all resize-none text-gray-100 placeholder-gray-400"
-            placeholder="请描述您的推特活动..."
+            placeholder={placeholder}
             value={request}
             onChange={(e) => setRequest(e.target.value)}
             disabled={isProcessing}
@@ -45,7 +46,7 @@ const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing }) => {
                 : 'gradient-primary text-white hover:opacity-90'
             }`}
           >
-            {isProcessing ? '处理中...' : '提交请求'}
+            {isProcessing ? '处理中...' : '发送'}
             <Send size={18} />
           </button>
         </form>

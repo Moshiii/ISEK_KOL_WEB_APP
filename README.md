@@ -1,45 +1,36 @@
 # ISEK_KOL_WEB_APP
 
+## 环境配置
 
-## start python server using:
-
+1. 复制环境变量模板文件:
+```bash
 cd server
+cp .env.example .env
+```
 
+2. 在 `.env` 文件中设置你的 OpenAI API key:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+## 启动服务器
+
+```bash
+cd server
 python3 -m pip install -r requirements.txt
-
 python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
 
+## 启动前端
 
-## start frontend using:
-
+```bash
 npm install
-
 npm run dev
+```
 
-# TODO:
+## 功能说明
 
-插件端：
-1. 加一个API 在网页server端能调用 我向这个API发送一个大的json：
-
-{
-    user_ID: AAA
-    action: 点赞
-    postID: xxxxx
-    content: postID
-}
-{
-    user_ID: BBB
-    action: 发推
-    postID: None
-    content: blahblah
-}
-{
-    user_ID: CCC
-    action: 回复
-    postID: xxxxx
-    content: blahblah
-}
-
-# 网页端:
-1. 改后台 让生成内容略有不同 
-2. 让生成的任务有结果。
+- 用户可以提交推特活动请求
+- AI助手Alex会通过多轮对话收集必要信息
+- 收集完成后自动分配任务给团队成员
+- 实时展示活动进度和数据

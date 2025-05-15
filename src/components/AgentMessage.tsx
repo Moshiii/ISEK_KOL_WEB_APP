@@ -27,23 +27,26 @@ const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
     
     return <p className="whitespace-pre-wrap">{message.content}</p>;
   };
+
+  const messageClasses = message.agentId === 'user' ? 'ml-auto' : '';
+  const contentClasses = message.agentId === 'user' ? 'bg-gradient-to-r from-[#5370FF] to-[#FF66C5] text-white' : `bg-opacity-10 border-l-3`;
   
   return (
-    <div className="flex mb-4 animate-fadeIn">
-      <div className="mr-3 flex-shrink-0">
+    <div className={`flex mb-4 animate-fadeIn ${messageClasses} ${message.agentId === 'user' ? 'flex-row-reverse' : ''}`}>
+      <div className={`${message.agentId === 'user' ? 'ml-3' : 'mr-3'} flex-shrink-0`}>
         <AgentAvatar agent={agent} />
       </div>
-      <div className="flex flex-col max-w-[80%]">
-        <div className="flex items-center gap-2 mb-1">
+      <div className={`flex flex-col max-w-[80%] ${message.agentId === 'user' ? 'items-end' : ''}`}>
+        <div className={`flex items-center gap-2 mb-1 ${message.agentId === 'user' ? 'flex-row-reverse' : ''}`}>
           <span className="font-semibold" style={{ color: agent.color }}>{agent.name}</span>
           <span className="text-xs text-gray-500">{formatTime(message.timestamp)}</span>
         </div>
         <div 
-          className="p-3 rounded-lg"
-          style={{ 
-            backgroundColor: `${agent.color}10`, // 10% opacity
-            borderLeft: `3px solid ${agent.color}` 
-          }}
+          className={`p-3 rounded-lg ${contentClasses}`}
+          style={message.agentId !== 'user' ? { 
+            backgroundColor: `${agent.color}10`,
+            borderLeft: `3px solid ${agent.color}`
+          } : {}}
         >
           {renderMessageContent()}
         </div>

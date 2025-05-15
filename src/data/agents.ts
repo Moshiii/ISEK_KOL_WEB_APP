@@ -1,7 +1,15 @@
 import { Agent } from '../types';
-import { CircleUserRound, UserCog, PenTool, Sparkles } from 'lucide-react';
+import { CircleUserRound, UserCog, PenTool, Sparkles, User } from 'lucide-react';
 
 export const agents: Agent[] = [
+  {
+    id: 'user',
+    name: '用户',
+    role: 'user',
+    avatar: 'user',
+    color: '#F43F5E', // Rose
+    description: 'User of the system'
+  },
   {
     id: 'coordinator',
     name: 'Alex',
@@ -38,6 +46,8 @@ export const agents: Agent[] = [
 
 export const getAgentIcon = (role: Agent['role']) => {
   switch (role) {
+    case 'user':
+      return User;
     case 'coordinator':
       return CircleUserRound;
     case 'researcher':

@@ -91,16 +91,26 @@ export function useChatSimulation() {
       resetChat();
       setStatus('planning');
       
+      // Add user message first
+      const userMessage: Message = {
+        id: generateId(),
+        agentId: 'user',
+        content: request,
+        timestamp: new Date(),
+        type: 'user-message'
+      };
+      setMessages([userMessage]);
+      
       const result = await createCampaign(request);
       
       if (result.status === 'success') {
         const { campaign: newCampaign } = result;
         
         setCampaign(newCampaign);
-        setMessages(newCampaign.messages.map(msg => ({
+        setMessages(prev => [...prev, ...newCampaign.messages.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
-        })));
+        }))]);
         setTasks(newCampaign.tasks.map(task => ({
           ...task,
           createdAt: new Date(task.createdAt)

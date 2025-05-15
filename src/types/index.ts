@@ -1,4 +1,4 @@
-export type AgentRole = 'coordinator' | 'researcher' | 'writer' | 'designer' | 'twitter-agent';
+export type AgentRole = 'coordinator' | 'researcher' | 'writer' | 'designer' | 'twitter-agent' | 'user';
 
 export interface Agent {
   id: string;
@@ -34,7 +34,7 @@ export interface Message {
   agentId: string;
   content: string;
   timestamp: Date;
-  type: 'message' | 'task-assignment' | 'task-completion';
+  type: 'message' | 'task-assignment' | 'task-completion' | 'user-message';
   taskId?: string;
 }
 

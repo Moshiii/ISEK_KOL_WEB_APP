@@ -4,13 +4,17 @@ import ChatWindow from './components/ChatWindow';
 import { useChatSimulation } from './hooks/useChatSimulation';
 
 function App() {
-  const { messages, tasks, typingAgent, status, metrics, startCampaign } = useChatSimulation();
+  const { messages, tasks, typingAgent, status, metrics, startCampaign, handleUserResponse } = useChatSimulation();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmitRequest = (request: string) => {
-    setIsProcessing(true);
-    startCampaign(request);
-    setIsProcessing(false);
+    if (messages.length === 0) {
+      setIsProcessing(true);
+      startCampaign(request);
+      setIsProcessing(false);
+    } else {
+      handleUserResponse(request);
+    }
   };
 
   return (

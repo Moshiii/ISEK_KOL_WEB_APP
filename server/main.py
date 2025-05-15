@@ -167,8 +167,8 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
     请使用专业但友好的语气，每次只问一个问题。"""
     
     try:
-        response = await openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo",
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_message},
                 *conversation_history

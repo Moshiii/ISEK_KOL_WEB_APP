@@ -196,6 +196,46 @@ def generate_id() -> str:
 def get_agent_by_id(agent_id: str) -> Dict:
     return next((agent for agent in agents if agent["id"] == agent_id), agents[0])
 
+def create_recruitment_messages() -> List[Dict]:
+    messages = []
+    
+    # Alex's introduction message
+    messages.append({
+        "id": generate_id(),
+        "agentId": "coordinator",
+        "content": "根据您的需求，我已经组建了一个专业的团队来执行这次推特活动。让我来介绍一下团队成员：",
+        "timestamp": datetime.now().isoformat(),
+        "type": "message"
+    })
+    
+    # Team member introductions
+    team_intros = {
+        "researcher": "大家好，我是Riley，作为研究分析师，我将负责深入分析目标受众、市场趋势和竞争对手，确保我们的活动策略建立在可靠的数据基础之上。",
+        "writer": "你好，我是Jordan，我是团队的内容创作者。我会确保每条推文都富有吸引力，准确传达品牌信息，并与目标受众产生共鸣。",
+        "designer": "嗨，我是Taylor，作为设计师，我将为活动创作视觉内容，确保每个设计元素都能强化品牌形象，提升用户参与度。"
+    }
+    
+    for agent in agents[1:]:  # Skip the first agent (user)
+        if agent["role"] in team_intros:
+            messages.append({
+                "id": generate_id(),
+                "agentId": agent["id"],
+                "content": team_intros[agent["role"]],
+                "timestamp": datetime.now().isoformat(),
+                "type": "message"
+            })
+    
+    # Alex's closing message
+    messages.append({
+        "id": generate_id(),
+        "agentId": "coordinator",
+        "content": "现在我们的团队已经准备就绪，让我们开始规划这次推特活动吧！",
+        "timestamp": datetime.now().isoformat(),
+        "type": "message"
+    })
+    
+    return messages
+
 # API endpoints
 @app.get("/api/agents")
 async def get_agents():
@@ -206,7 +246,10 @@ async def create_campaign(campaign: CampaignRequest):
     try:
         campaign_id = generate_id()
         
-        # Add user's initial message first
+        # Create recruitment messages
+        recruitment_messages = create_recruitment_messages()
+        
+        # Add user's initial message
         user_message = {
             "id": generate_id(),
             "agentId": "user",
@@ -225,11 +268,18 @@ async def create_campaign(campaign: CampaignRequest):
             "type": "message"
         }
         
+        # Combine all messages in order
+        all_messages = [
+            *recruitment_messages,
+            user_message,
+            coordinator_message
+        ]
+        
         new_campaign = {
             "id": campaign_id,
             "request": campaign.request,
             "tasks": [],
-            "messages": [user_message, coordinator_message],
+            "messages": all_messages,
             "status": "planning",
             "createdAt": datetime.now().isoformat(),
             "metrics": {

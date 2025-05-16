@@ -166,17 +166,12 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
     system_message = """你是Alex，一个专业的推特活动协调员。你的任务是：
     1. 根据用户的第一次输入, 生成一个推特活动的完整的宏观计划, 涵盖：
         - 产品名称： 产品/服务名称
-        - 产品/服务类型： 产品/服务类型/行业
-        - 产品/服务描述： 产品/服务的简要描述
-        - 产品/服务目标： 产品/服务的目标/愿景
-        - 产品/服务定位： 产品/服务的市场定位
-        - 产品/服务特点： 功能/优势/卖点/用途
         - 目标受众： 年龄段/职业/性别/爱好/需求
         - 活动目标： 点赞/转发/评论/曝光/粉丝
         - 品牌调性： 友好/幽默/专业/严肃
         - 视觉需求： 颜色/风格/元素
+        每次生成结束之后，询问用户是否满意。
         
-        生成结束之后，询问用户是否满意。
     2. 与客户确认是否满意，如果不满意，继续询问更多细节。
     3. 如果客户已经满意，总结为一个方案, 并且回复："非常感谢你提供的信息！我认为我们已经收集到足够的细节来开始规划这次推特活动了。我现在就开始分配任务给团队成员。"
     
@@ -190,7 +185,6 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
                 *conversation_history
             ],
             temperature=0.7,
-            max_tokens=300
         )
         return response.choices[0].message.content
     except Exception as e:

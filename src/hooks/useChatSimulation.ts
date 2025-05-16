@@ -1,29 +1,27 @@
-import { useState, useEffect } from 'react';
-import { Message, Task, Campaign, Agent, CampaignMetrics } from '../types';
-import { agents, getAgentById } from '../data/agents';
-import { createCampaign, sendUserMessage } from '../api';
+import { useState } from 'react';
+import { Message, Task, Campaign, Agent } from '../types';
+import { getAgentById } from '../data/agents';
 
-const TWITTER_HANDLES = [
-  'tech_influencer',
-  'digital_marketer',
-  'social_guru',
-  'content_creator'
+const PROGRESS_MESSAGES = [
+  "让我思考一下最佳的执行方案...",
+  "正在分析市场趋势和目标受众...",
+  "正在评估不同策略的可行性...",
+  "正在设计任务分配方案...",
+  "正在制定详细的执行计划...",
+  "正在考虑各种可能的营销角度...",
+  "正在规划时间线和里程碑...",
+  "正在评估资源分配方案...",
+  "正在思考如何最大化活动效果...",
+  "正在制定具体的实施步骤..."
 ];
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
 
-const initialMetrics: CampaignMetrics = {
-  totalPosts: 0,
-  totalLikes: 0,
-  totalReplies: 0,
-  totalRetweets: 0,
-  twitterAccounts: []
-};
-
-// Helper function to add delay between actions
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const getRandomDelay = () => Math.random() * 500 + 500; // 500-1000ms
 
 export function useChatSimulation() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -31,174 +29,119 @@ export function useChatSimulation() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [typingAgent, setTypingAgent] = useState<Agent | null>(null);
   const [status, setStatus] = useState<'idle' | 'planning' | 'in-progress' | 'completed'>('idle');
-  const [metrics, setMetrics] = useState<CampaignMetrics>(initialMetrics);
 
-  const resetChat = () => {
-    setCampaign(null);
-    setMessages([]);
-    setTasks([]);
-    setTypingAgent(null);
-    setStatus('idle');
-    setMetrics(initialMetrics);
+  const addMessage = async (message: Message) => {
+    setMessages(prev => [...prev, message]);
   };
 
-  const updateMetrics = () => {
-    setMetrics(prev => {
-      const newAccounts = [...prev.twitterAccounts];
-      
-      if (Math.random() > 0.7 && newAccounts.length < TWITTER_HANDLES.length) {
-        const unusedHandles = TWITTER_HANDLES.filter(
-          handle => !newAccounts.some(acc => acc.handle === handle)
-        );
-        if (unusedHandles.length > 0) {
-          const newHandle = unusedHandles[Math.floor(Math.random() * unusedHandles.length)];
-          newAccounts.push({
-            handle: newHandle,
-            postsCount: 0,
-            likesCount: 0,
-            repliesCount: 0,
-            retweetsCount: 0
-          });
-        }
-      }
-
-      const updatedAccounts = newAccounts.map(account => ({
-        ...account,
-        postsCount: account.postsCount + Math.floor(Math.random() * 2),
-        likesCount: account.likesCount + Math.floor(Math.random() * 5),
-        repliesCount: account.repliesCount + Math.floor(Math.random() * 3),
-        retweetsCount: account.retweetsCount + Math.floor(Math.random() * 2)
-      }));
-
-      const totals = updatedAccounts.reduce((acc, account) => ({
-        totalPosts: acc.totalPosts + account.postsCount,
-        totalLikes: acc.totalLikes + account.likesCount,
-        totalReplies: acc.totalReplies + account.repliesCount,
-        totalRetweets: acc.totalRetweets + account.retweetsCount
-      }), {
-        totalPosts: 0,
-        totalLikes: 0,
-        totalReplies: 0,
-        totalRetweets: 0
-      });
-
-      return {
-        ...totals,
-        twitterAccounts: updatedAccounts
-      };
-    });
-  };
-
-  const addUserMessage = (content: string) => {
-    const userMessage: Message = {
+  const addProgressMessage = async () => {
+    const message = {
       id: generateId(),
-      agentId: 'user',
-      content,
+      agentId: 'coordinator',
+      content: PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)],
       timestamp: new Date(),
       type: 'message'
     };
-    setMessages(prev => [...prev, userMessage]);
-  };
-
-  const addMessageWithDelay = async (message: Message) => {
-    setTypingAgent(getAgentById(message.agentId));
-    await delay(Math.random() * 1000 + 500); // Random delay between 500-1500ms
-    setMessages(prev => [...prev, { ...message, timestamp: new Date() }]);
+    setTypingAgent(getAgentById('coordinator'));
+    await delay(getRandomDelay());
+    await addMessage(message);
     setTypingAgent(null);
-  };
-
-  const addTaskWithDelay = async (task: Task) => {
-    await delay(Math.random() * 1000 + 500); // Random delay between 500-1500ms
-    setTasks(prev => [...prev, task]);
-    
-    const agent = getAgentById(task.assignedTo);
-    const taskMessage = {
-      id: generateId(),
-      agentId: 'coordinator',
-      content: `<strong>${agent.name}</strong> 将负责 <strong>${task.title}</strong>：${task.description}`,
-      timestamp: new Date(),
-      type: 'task-assignment' as const,
-      taskId: task.id
-    };
-    await addMessageWithDelay(taskMessage);
   };
 
   const startCampaign = async (request: string) => {
     try {
-      resetChat();
-      setStatus('planning');
-      
-      // Immediately show user message
-      addUserMessage(request);
-      setTypingAgent(getAgentById('coordinator'));
-      
-      const result = await createCampaign(request);
-      
-      if (result.status === 'success') {
-        const { campaign: newCampaign } = result;
-        
-        setCampaign(newCampaign);
+      // Show user message immediately
+      const userMessage = {
+        id: generateId(),
+        agentId: 'user',
+        content: request,
+        timestamp: new Date(),
+        type: 'message'
+      };
+      await addMessage(userMessage);
 
-        // Add coordinator's initial response
-        const coordinatorMessages = newCampaign.messages
-          .filter(msg => msg.agentId === 'coordinator' && msg.type === 'message');
-        
-        for (const msg of coordinatorMessages) {
-          await addMessageWithDelay({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Failed to start campaign:', error);
-      setTypingAgent(null);
-      throw error;
-    }
-  };
+      // Show progress message
+      await addProgressMessage();
 
-  const sendMessage = async (content: string) => {
-    if (!campaign) return;
-    
-    try {
-      // Immediately show user message
-      addUserMessage(content);
-      setTypingAgent(getAgentById('coordinator'));
+      // Get campaign plan
+      const response = await fetch('http://localhost:8000/api/campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request })
+      });
       
-      const updatedCampaign = await sendUserMessage(campaign.id, content);
-      
-      setCampaign(updatedCampaign);
+      const result = await response.json();
+      setCampaign(result.campaign);
 
-      // Add new messages sequentially
-      const newMessages = updatedCampaign.messages
-        .filter(msg => msg.agentId !== 'user' && !messages.some(m => m.id === msg.id));
+      // Show plan
+      const planMessage = {
+        id: generateId(),
+        agentId: 'coordinator',
+        content: result.campaign.messages[0].content,
+        timestamp: new Date(),
+        type: 'message'
+      };
+      await addMessage(planMessage);
 
-      for (const msg of newMessages) {
-        await addMessageWithDelay({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
+      // Show progress message
+      await addProgressMessage();
+
+      // Get team
+      const teamResponse = await fetch(`http://localhost:8000/api/campaign/${result.campaign.id}/team`);
+      const { team } = await teamResponse.json();
+
+      // Show team introductions
+      for (const member of team) {
+        await delay(getRandomDelay());
+        await addMessage({
+          id: generateId(),
+          agentId: member.id,
+          content: member.introduction,
+          timestamp: new Date(),
+          type: 'message'
         });
       }
-      
-      if (updatedCampaign.tasks && updatedCampaign.info_gathering_complete) {
-        setStatus('in-progress');
-        
-        // Add tasks sequentially
-        for (const task of updatedCampaign.tasks) {
-          await addTaskWithDelay({
-            ...task,
-            createdAt: new Date(task.createdAt)
-          });
-        }
-        
-        const metricsInterval = setInterval(updateMetrics, 3000);
-        return () => clearInterval(metricsInterval);
+
+      // Show progress message
+      await addProgressMessage();
+
+      // Get tasks
+      const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${result.campaign.id}/tasks`);
+      const { tasks: newTasks } = await tasksResponse.json();
+      setTasks(newTasks);
+
+      // Show task assignments
+      for (const task of newTasks) {
+        const agent = getAgentById(task.assignedTo);
+        await delay(getRandomDelay());
+        await addMessage({
+          id: generateId(),
+          agentId: 'coordinator',
+          content: `${agent.name} 将负责 ${task.title}：${task.description}`,
+          timestamp: new Date(),
+          type: 'task-assignment',
+          taskId: task.id
+        });
       }
-      
+
+      // Get promotion plan
+      const promotionResponse = await fetch(`http://localhost:8000/api/campaign/${result.campaign.id}/promotion`);
+      const { plan } = await promotionResponse.json();
+
+      // Show promotion plan
+      await addProgressMessage();
+      await addMessage({
+        id: generateId(),
+        agentId: 'coordinator',
+        content: '我们已经制定了详细的推广计划，包括多个账号的协同推广策略。',
+        timestamp: new Date(),
+        type: 'message'
+      });
+
+      setStatus('in-progress');
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('Error:', error);
       setTypingAgent(null);
-      throw error;
     }
   };
 
@@ -207,9 +150,6 @@ export function useChatSimulation() {
     tasks,
     typingAgent,
     status,
-    metrics,
-    startCampaign,
-    sendMessage,
-    resetChat
+    startCampaign
   };
 }

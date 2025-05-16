@@ -63,14 +63,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </div>
         
-        {(tasks.length > 0 || status !== 'idle') && (
-          <div className="w-full md:w-64 lg:w-80 border-t md:border-t-0 md:border-l border-gray-700 overflow-hidden flex flex-col min-h-0 bg-gray-800">
-            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
-              <h3 className="font-medium mb-3 text-gray-200">任务</h3>
-              <TaskList tasks={tasks} />
-            </div>
+        <div className="w-full md:w-64 lg:w-80 border-t md:border-t-0 md:border-l border-gray-700 overflow-hidden flex flex-col min-h-0 bg-gray-800">
+          <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+            <h3 className="font-medium mb-3 text-gray-200">任务</h3>
+            <TaskList tasks={tasks} />
           </div>
-        )}
+        </div>
         
         <CampaignMetricsPanel metrics={metrics} />
       </div>

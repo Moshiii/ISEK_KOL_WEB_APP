@@ -22,6 +22,9 @@ const initialMetrics: CampaignMetrics = {
   twitterAccounts: []
 };
 
+// Helper function to add delay between actions
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export function useChatSimulation() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -97,6 +100,29 @@ export function useChatSimulation() {
     setMessages(prev => [...prev, userMessage]);
   };
 
+  const addMessageWithDelay = async (message: Message) => {
+    setTypingAgent(getAgentById(message.agentId));
+    await delay(Math.random() * 1000 + 500); // Random delay between 500-1500ms
+    setMessages(prev => [...prev, { ...message, timestamp: new Date() }]);
+    setTypingAgent(null);
+  };
+
+  const addTaskWithDelay = async (task: Task) => {
+    await delay(Math.random() * 1000 + 500); // Random delay between 500-1500ms
+    setTasks(prev => [...prev, task]);
+    
+    const agent = getAgentById(task.assignedTo);
+    const taskMessage = {
+      id: generateId(),
+      agentId: 'coordinator',
+      content: `<strong>${agent.name}</strong> 将负责 <strong>${task.title}</strong>：${task.description}`,
+      timestamp: new Date(),
+      type: 'task-assignment' as const,
+      taskId: task.id
+    };
+    await addMessageWithDelay(taskMessage);
+  };
+
   const startCampaign = async (request: string) => {
     try {
       resetChat();
@@ -112,24 +138,18 @@ export function useChatSimulation() {
         const { campaign: newCampaign } = result;
         
         setCampaign(newCampaign);
-        setMessages(prev => [
-          ...prev,
-          ...newCampaign.messages
-            .filter(msg => msg.agentId !== 'user') // Skip user messages as we've already added them
-            .map(msg => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            }))
-        ]);
+
+        // Add coordinator's initial response
+        const coordinatorMessages = newCampaign.messages
+          .filter(msg => msg.agentId === 'coordinator' && msg.type === 'message');
         
-        if (newCampaign.tasks) {
-          setTasks(newCampaign.tasks.map(task => ({
-            ...task,
-            createdAt: new Date(task.createdAt)
-          })));
+        for (const msg of coordinatorMessages) {
+          await addMessageWithDelay({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          });
         }
       }
-      setTypingAgent(null);
     } catch (error) {
       console.error('Failed to start campaign:', error);
       setTypingAgent(null);
@@ -148,32 +168,33 @@ export function useChatSimulation() {
       const updatedCampaign = await sendUserMessage(campaign.id, content);
       
       setCampaign(updatedCampaign);
-      setMessages(prev => [
-        ...prev,
-        ...updatedCampaign.messages
-          .filter(msg => msg.agentId !== 'user' && !prev.some(p => p.id === msg.id))
-          .map(msg => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
-      ]);
-      
-      if (updatedCampaign.tasks) {
-        setTasks(updatedCampaign.tasks.map(task => ({
-          ...task,
-          createdAt: new Date(task.createdAt)
-        })));
-        
-        if (updatedCampaign.info_gathering_complete) {
-          setStatus('in-progress');
-          const metricsInterval = setInterval(updateMetrics, 3000);
-          
-          // Clean up interval when component unmounts
-          return () => clearInterval(metricsInterval);
-        }
+
+      // Add new messages sequentially
+      const newMessages = updatedCampaign.messages
+        .filter(msg => msg.agentId !== 'user' && !messages.some(m => m.id === msg.id));
+
+      for (const msg of newMessages) {
+        await addMessageWithDelay({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        });
       }
       
-      setTypingAgent(null);
+      if (updatedCampaign.tasks && updatedCampaign.info_gathering_complete) {
+        setStatus('in-progress');
+        
+        // Add tasks sequentially
+        for (const task of updatedCampaign.tasks) {
+          await addTaskWithDelay({
+            ...task,
+            createdAt: new Date(task.createdAt)
+          });
+        }
+        
+        const metricsInterval = setInterval(updateMetrics, 3000);
+        return () => clearInterval(metricsInterval);
+      }
+      
     } catch (error) {
       console.error('Failed to send message:', error);
       setTypingAgent(null);

@@ -26,6 +26,10 @@ class CampaignRequest(BaseModel):
 class UserMessageRequest(BaseModel):
     content: str
 
+class TaskExecutionRequest(BaseModel):
+    taskId: str
+    status: str
+
 # In-memory storage
 campaigns = {}
 
@@ -92,54 +96,44 @@ DUMMY_TASKS = [
         "title": "市场研究",
         "description": "分析目标受众和竞品情况",
         "assignedTo": "researcher",
-        "status": "pending"
+        "status": "pending",
+        "createdAt": datetime.now().isoformat(),
+        "subTasks": []
     },
     {
         "id": "task2",
         "title": "内容策划",
         "description": "制定内容发布计划",
         "assignedTo": "writer",
-        "status": "pending"
+        "status": "pending",
+        "createdAt": datetime.now().isoformat(),
+        "subTasks": []
     },
     {
         "id": "task3",
         "title": "视觉设计",
         "description": "设计活动主视觉",
         "assignedTo": "designer",
-        "status": "pending"
+        "status": "pending",
+        "createdAt": datetime.now().isoformat(),
+        "subTasks": []
     }
 ]
 
-DUMMY_PROMOTION_PLAN = [
-    {
-        "account": "tech_influencer",
-        "actions": [
-            {
-                "type": "post",
-                "content": "分享最新科技趋势",
-                "target": "self"
-            },
-            {
-                "type": "like",
-                "target": "user_post_1"
-            }
-        ]
+TASK_RESULTS = {
+    "researcher": {
+        "in_progress": "正在进行市场调研，分析目标受众特征...",
+        "completed": "市场调研完成！发现了几个很有价值的营销切入点。"
     },
-    {
-        "account": "digital_marketer",
-        "actions": [
-            {
-                "type": "retweet",
-                "target": "tech_influencer_post_1"
-            },
-            {
-                "type": "reply",
-                "content": "精彩的观点分享！",
-                "target": "tech_influencer_post_1"
-            }
-        ]
+    "writer": {
+        "in_progress": "正在设计内容框架，编写推文...",
+        "completed": "内容创作完成！我们有一个完整的推文发布计划了。"
+    },
+    "designer": {
+        "in_progress": "正在设计视觉元素，确保品牌一致性...",
+        "completed": "设计工作完成！所有视觉元素都准备就绪。"
     }
-]
+}
 
 def generate_id() -> str:
     return str(uuid.uuid4())
@@ -187,15 +181,39 @@ async def get_tasks(campaign_id: str):
     
     return {"tasks": DUMMY_TASKS}
 
-@app.post("/api/campaign/{campaign_id}/promotion")
-async def get_promotion_plan(campaign_id: str):
+@app.post("/api/campaign/{campaign_id}/task/{task_id}/execute")
+async def execute_task(campaign_id: str, task_id: str, execution: TaskExecutionRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    return {"plan": DUMMY_PROMOTION_PLAN}
+    task = next((t for t in DUMMY_TASKS if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    agent_role = task["assignedTo"]
+    result = TASK_RESULTS[agent_role][execution.status]
+    
+    return {
+        "status": "success",
+        "result": result,
+        "taskStatus": execution.status
+    }
 
 @app.get("/api/campaign/{campaign_id}")
 async def get_campaign(campaign_id: str):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return campaigns[campaign_id]
+
+@app.post("/api/campaign/{campaign_id}/confirm")
+async def confirm_campaign(campaign_id: str):
+    if campaign_id not in campaigns:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    campaigns[campaign_id]["status"] = "in_progress"
+    campaigns[campaign_id]["info_gathering_complete"] = True
+    
+    return {
+        "status": "success",
+        "message": "Campaign confirmed and started"
+    }

@@ -40,6 +40,19 @@ const AGENT_TASK_MESSAGES = {
   ]
 };
 
+const TWITTER_ACTION_MESSAGES = {
+  post: (account: string, content: string) => 
+    `${account} 发布了推文：${content}`,
+  like: (account: string, target: string) => 
+    `${account} 点赞了 ${target} 的推文`,
+  reply: (account: string, target: string, content: string) => 
+    `${account} 回复了 ${target}：${content}`,
+  retweet: (account: string, target: string) => 
+    `${account} 转发了 ${target} 的推文`,
+  follow: (account: string, target: string) => 
+    `${account} 关注了 ${target}`
+};
+
 const initialMetrics: CampaignMetrics = {
   totalPosts: 0,
   totalLikes: 0,
@@ -252,13 +265,44 @@ export function useChatSimulation() {
         await executeAgentTask(task);
       }
 
-      // Start campaign execution
-      await addAgentMessage('coordinator', '所有任务都已完成！现在开始执行推广计划。');
-      setStatus('in-progress');
+      // Get Twitter sequence
+      const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const { sequence } = await sequenceResponse.json();
 
-      // Start updating metrics
-      const interval = setInterval(updateMetrics, getRandomDelay());
-      setMetricsInterval(interval);
+      // Show Twitter sequence plan
+      await addAgentMessage('coordinator', '我们已经制定了详细的推广计划，以下是具体的执行步骤：');
+      
+      for (const action of sequence) {
+        const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
+          action.account,
+          action.target_account || action.account,
+          action.content || ''
+        );
+        await addAgentMessage('coordinator', message);
+      }
+
+      await addAgentMessage('coordinator', '这是我们的推广计划，您觉得如何？如果同意，我们就开始执行。');
+
+      // Confirm campaign
+      const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      if (confirmResponse.ok) {
+        // Start campaign execution
+        await addAgentMessage('coordinator', '太好了！我们现在开始执行推广计划。');
+        setStatus('in-progress');
+
+        // Start updating metrics
+        const interval = setInterval(updateMetrics, getRandomDelay());
+        setMetricsInterval(interval);
+      }
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);

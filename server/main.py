@@ -30,6 +30,13 @@ class TaskExecutionRequest(BaseModel):
     taskId: str
     status: str
 
+class TwitterAction(BaseModel):
+    account: str
+    action_type: str  # like, post, reply, retweet, follow
+    target_account: Optional[str]
+    post_id: Optional[str]
+    content: Optional[str]
+
 # In-memory storage
 campaigns = {}
 
@@ -135,6 +142,42 @@ TASK_RESULTS = {
     }
 }
 
+TWITTER_ACCOUNTS = [
+    "tech_influencer",
+    "digital_marketer",
+    "social_guru",
+    "content_creator"
+]
+
+DUMMY_POSTS = [
+    "这个产品真的很棒！推荐大家试试 #创新",
+    "使用体验超出预期，分享给大家 #推荐",
+    "这款应用解决了我的很多问题 #好物推荐",
+    "不得不说，这个真的很实用 #分享"
+]
+
+def generate_twitter_sequence():
+    sequence = []
+    accounts = TWITTER_ACCOUNTS.copy()
+    random.shuffle(accounts)
+    
+    for i in range(10):
+        action = random.choice(['post', 'like', 'reply', 'retweet', 'follow'])
+        account = accounts[i % len(accounts)]
+        target = random.choice([acc for acc in accounts if acc != account])
+        post_id = f"post_{random.randint(1000, 9999)}" if action != 'follow' else None
+        content = random.choice(DUMMY_POSTS) if action in ['post', 'reply'] else None
+        
+        sequence.append({
+            "account": account,
+            "action_type": action,
+            "target_account": target if action in ['follow', 'reply'] else account,
+            "post_id": post_id,
+            "content": content
+        })
+    
+    return sequence
+
 def generate_id() -> str:
     return str(uuid.uuid4())
 
@@ -204,6 +247,18 @@ async def get_campaign(campaign_id: str):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return campaigns[campaign_id]
+
+@app.post("/api/campaign/{campaign_id}/twitter-sequence")
+async def get_twitter_sequence(campaign_id: str):
+    if campaign_id not in campaigns:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    sequence = generate_twitter_sequence()
+    
+    return {
+        "status": "success",
+        "sequence": sequence
+    }
 
 @app.post("/api/campaign/{campaign_id}/confirm")
 async def confirm_campaign(campaign_id: str):

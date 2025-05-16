@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Message, Task, Campaign, Agent } from '../types';
+import { useState, useEffect } from 'react';
+import { Message, Task, Campaign, Agent, CampaignMetrics } from '../types';
 import { getAgentById } from '../data/agents';
 
 const PROGRESS_MESSAGES = [
@@ -15,6 +15,21 @@ const PROGRESS_MESSAGES = [
   "正在制定具体的实施步骤..."
 ];
 
+const TWITTER_HANDLES = [
+  'tech_influencer',
+  'digital_marketer',
+  'social_guru',
+  'content_creator'
+];
+
+const initialMetrics: CampaignMetrics = {
+  totalPosts: 0,
+  totalLikes: 0,
+  totalReplies: 0,
+  totalRetweets: 0,
+  twitterAccounts: []
+};
+
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
@@ -29,6 +44,63 @@ export function useChatSimulation() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [typingAgent, setTypingAgent] = useState<Agent | null>(null);
   const [status, setStatus] = useState<'idle' | 'planning' | 'in-progress' | 'completed'>('idle');
+  const [metrics, setMetrics] = useState<CampaignMetrics>(initialMetrics);
+  const [metricsInterval, setMetricsInterval] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (metricsInterval) {
+        clearInterval(metricsInterval);
+      }
+    };
+  }, [metricsInterval]);
+
+  const updateMetrics = () => {
+    setMetrics(prev => {
+      const newAccounts = [...prev.twitterAccounts];
+      
+      if (Math.random() > 0.7 && newAccounts.length < TWITTER_HANDLES.length) {
+        const unusedHandles = TWITTER_HANDLES.filter(
+          handle => !newAccounts.some(acc => acc.handle === handle)
+        );
+        if (unusedHandles.length > 0) {
+          const newHandle = unusedHandles[Math.floor(Math.random() * unusedHandles.length)];
+          newAccounts.push({
+            handle: newHandle,
+            postsCount: 0,
+            likesCount: 0,
+            repliesCount: 0,
+            retweetsCount: 0
+          });
+        }
+      }
+
+      const updatedAccounts = newAccounts.map(account => ({
+        ...account,
+        postsCount: account.postsCount + Math.floor(Math.random() * 2),
+        likesCount: account.likesCount + Math.floor(Math.random() * 5),
+        repliesCount: account.repliesCount + Math.floor(Math.random() * 3),
+        retweetsCount: account.retweetsCount + Math.floor(Math.random() * 2)
+      }));
+
+      const totals = updatedAccounts.reduce((acc, account) => ({
+        totalPosts: acc.totalPosts + account.postsCount,
+        totalLikes: acc.totalLikes + account.likesCount,
+        totalReplies: acc.totalReplies + account.repliesCount,
+        totalRetweets: acc.totalRetweets + account.retweetsCount
+      }), {
+        totalPosts: 0,
+        totalLikes: 0,
+        totalReplies: 0,
+        totalRetweets: 0
+      });
+
+      return {
+        ...totals,
+        twitterAccounts: updatedAccounts
+      };
+    });
+  };
 
   const addMessage = async (message: Message) => {
     setMessages(prev => [...prev, message]);
@@ -83,11 +155,47 @@ export function useChatSimulation() {
       };
       await addMessage(planMessage);
 
+      // Show confirmation request
+      await addMessage({
+        id: generateId(),
+        agentId: 'coordinator',
+        content: '您觉得这个方案怎么样？如果同意，请回复"确认"开始执行。',
+        timestamp: new Date(),
+        type: 'message'
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      setTypingAgent(null);
+    }
+  };
+
+  const sendMessage = async (content: string) => {
+    if (!campaign || content.trim().toLowerCase() !== '确认') {
+      await addMessage({
+        id: generateId(),
+        agentId: 'coordinator',
+        content: '请回复"确认"以开始执行推广计划。',
+        timestamp: new Date(),
+        type: 'message'
+      });
+      return;
+    }
+
+    try {
+      // Show user confirmation
+      await addMessage({
+        id: generateId(),
+        agentId: 'user',
+        content,
+        timestamp: new Date(),
+        type: 'message'
+      });
+
       // Show progress message
       await addProgressMessage();
 
       // Get team
-      const teamResponse = await fetch(`http://localhost:8000/api/campaign/${result.campaign.id}/team`);
+      const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`);
       const { team } = await teamResponse.json();
 
       // Show team introductions
@@ -106,7 +214,7 @@ export function useChatSimulation() {
       await addProgressMessage();
 
       // Get tasks
-      const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${result.campaign.id}/tasks`);
+      const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`);
       const { tasks: newTasks } = await tasksResponse.json();
       setTasks(newTasks);
 
@@ -125,7 +233,7 @@ export function useChatSimulation() {
       }
 
       // Get promotion plan
-      const promotionResponse = await fetch(`http://localhost:8000/api/campaign/${result.campaign.id}/promotion`);
+      const promotionResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/promotion`);
       const { plan } = await promotionResponse.json();
 
       // Show promotion plan
@@ -133,12 +241,16 @@ export function useChatSimulation() {
       await addMessage({
         id: generateId(),
         agentId: 'coordinator',
-        content: '我们已经制定了详细的推广计划，包括多个账号的协同推广策略。',
+        content: '我们已经制定了详细的推广计划，包括多个账号的协同推广策略。现在开始执行！',
         timestamp: new Date(),
         type: 'message'
       });
 
       setStatus('in-progress');
+
+      // Start updating metrics
+      const interval = setInterval(updateMetrics, getRandomDelay());
+      setMetricsInterval(interval);
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
@@ -150,6 +262,8 @@ export function useChatSimulation() {
     tasks,
     typingAgent,
     status,
-    startCampaign
+    metrics,
+    startCampaign,
+    sendMessage
   };
-}
+};

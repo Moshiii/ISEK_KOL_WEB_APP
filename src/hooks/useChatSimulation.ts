@@ -170,7 +170,18 @@ export function useChatSimulation() {
   };
 
   const sendMessage = async (content: string) => {
-    if (!campaign || content.trim().toLowerCase() !== '确认') {
+    if (!campaign) return;
+
+    // Show user message immediately
+    await addMessage({
+      id: generateId(),
+      agentId: 'user',
+      content,
+      timestamp: new Date(),
+      type: 'message'
+    });
+
+    if (content.trim() !== '确认') {
       await addMessage({
         id: generateId(),
         agentId: 'coordinator',
@@ -182,20 +193,15 @@ export function useChatSimulation() {
     }
 
     try {
-      // Show user confirmation
-      await addMessage({
-        id: generateId(),
-        agentId: 'user',
-        content,
-        timestamp: new Date(),
-        type: 'message'
-      });
-
       // Show progress message
       await addProgressMessage();
 
       // Get team
-      const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`);
+      const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
       const { team } = await teamResponse.json();
 
       // Show team introductions
@@ -214,7 +220,11 @@ export function useChatSimulation() {
       await addProgressMessage();
 
       // Get tasks
-      const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`);
+      const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
       const { tasks: newTasks } = await tasksResponse.json();
       setTasks(newTasks);
 
@@ -233,7 +243,11 @@ export function useChatSimulation() {
       }
 
       // Get promotion plan
-      const promotionResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/promotion`);
+      const promotionResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/promotion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
       const { plan } = await promotionResponse.json();
 
       // Show promotion plan

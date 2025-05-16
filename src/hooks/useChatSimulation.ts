@@ -22,6 +22,24 @@ const TWITTER_HANDLES = [
   'content_creator'
 ];
 
+const AGENT_TASK_MESSAGES = {
+  researcher: [
+    "我已经开始进行市场研究，重点关注目标受众的行为特征和偏好。",
+    "正在分析竞品的社交媒体策略，寻找差异化机会。",
+    "市场调研完成！我发现了几个很有价值的营销切入点。"
+  ],
+  writer: [
+    "我正在设计内容框架，确保每条推文都能引起共鸣。",
+    "正在撰写一系列吸引人的推文，融入关键信息点。",
+    "内容创作完成！我们有一个完整的推文发布计划了。"
+  ],
+  designer: [
+    "我在设计视觉主题，确保与品牌调性一致。",
+    "正在创作吸引眼球的配图和动画效果。",
+    "设计工作完成！所有视觉元素都准备就绪。"
+  ]
+};
+
 const initialMetrics: CampaignMetrics = {
   totalPosts: 0,
   totalLikes: 0,
@@ -45,6 +63,7 @@ export function useChatSimulation() {
   const [typingAgent, setTypingAgent] = useState<Agent | null>(null);
   const [status, setStatus] = useState<'idle' | 'planning' | 'in-progress' | 'completed'>('idle');
   const [metrics, setMetrics] = useState<CampaignMetrics>(initialMetrics);
+  const [metricsUpdateCount, setMetricsUpdateCount] = useState(0);
   const [metricsInterval, setMetricsInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -55,7 +74,15 @@ export function useChatSimulation() {
     };
   }, [metricsInterval]);
 
+  useEffect(() => {
+    if (metricsUpdateCount >= 10 && metricsInterval) {
+      clearInterval(metricsInterval);
+      setMetricsInterval(null);
+    }
+  }, [metricsUpdateCount, metricsInterval]);
+
   const updateMetrics = () => {
+    setMetricsUpdateCount(prev => prev + 1);
     setMetrics(prev => {
       const newAccounts = [...prev.twitterAccounts];
       
@@ -106,34 +133,56 @@ export function useChatSimulation() {
     setMessages(prev => [...prev, message]);
   };
 
-  const addProgressMessage = async () => {
-    const message = {
-      id: generateId(),
-      agentId: 'coordinator',
-      content: PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)],
-      timestamp: new Date(),
-      type: 'message'
-    };
-    setTypingAgent(getAgentById('coordinator'));
+  const addAgentMessage = async (agentId: string, content: string, type: Message['type'] = 'message', taskId?: string) => {
+    setTypingAgent(getAgentById(agentId));
     await delay(getRandomDelay());
-    await addMessage(message);
+    await addMessage({
+      id: generateId(),
+      agentId,
+      content,
+      timestamp: new Date(),
+      type,
+      taskId
+    });
     setTypingAgent(null);
+  };
+
+  const updateTaskStatus = async (taskId: string, status: Task['status']) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId ? { ...task, status } : task
+    ));
+  };
+
+  const executeAgentTask = async (task: Task) => {
+    const messages = AGENT_TASK_MESSAGES[task.assignedTo as keyof typeof AGENT_TASK_MESSAGES];
+    
+    // Start task
+    await updateTaskStatus(task.id, 'in-progress');
+    await addAgentMessage(task.assignedTo, messages[0]);
+    await delay(getRandomDelay());
+    
+    // Progress update
+    await addAgentMessage(task.assignedTo, messages[1]);
+    await delay(getRandomDelay());
+    
+    // Complete task
+    await updateTaskStatus(task.id, 'completed');
+    await addAgentMessage(task.assignedTo, messages[2]);
   };
 
   const startCampaign = async (request: string) => {
     try {
       // Show user message immediately
-      const userMessage = {
+      await addMessage({
         id: generateId(),
         agentId: 'user',
         content: request,
         timestamp: new Date(),
         type: 'message'
-      };
-      await addMessage(userMessage);
+      });
 
-      // Show progress message
-      await addProgressMessage();
+      // Show coordinator thinking
+      await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
 
       // Get campaign plan
       const response = await fetch('http://localhost:8000/api/campaign', {
@@ -146,23 +195,10 @@ export function useChatSimulation() {
       setCampaign(result.campaign);
 
       // Show plan
-      const planMessage = {
-        id: generateId(),
-        agentId: 'coordinator',
-        content: result.campaign.messages[0].content,
-        timestamp: new Date(),
-        type: 'message'
-      };
-      await addMessage(planMessage);
+      await addAgentMessage('coordinator', result.campaign.messages[0].content);
 
       // Show confirmation request
-      await addMessage({
-        id: generateId(),
-        agentId: 'coordinator',
-        content: '您觉得这个方案怎么样？如果同意，请回复"确认"开始执行。',
-        timestamp: new Date(),
-        type: 'message'
-      });
+      await addAgentMessage('coordinator', '您觉得这个方案怎么样？如果同意，请回复"确认"开始执行。');
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
@@ -182,20 +218,11 @@ export function useChatSimulation() {
     });
 
     if (content.trim() !== '确认') {
-      await addMessage({
-        id: generateId(),
-        agentId: 'coordinator',
-        content: '请回复"确认"以开始执行推广计划。',
-        timestamp: new Date(),
-        type: 'message'
-      });
+      await addAgentMessage('coordinator', '请回复"确认"以开始执行推广计划。');
       return;
     }
 
     try {
-      // Show progress message
-      await addProgressMessage();
-
       // Get team
       const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
         method: 'POST',
@@ -206,18 +233,8 @@ export function useChatSimulation() {
 
       // Show team introductions
       for (const member of team) {
-        await delay(getRandomDelay());
-        await addMessage({
-          id: generateId(),
-          agentId: member.id,
-          content: member.introduction,
-          timestamp: new Date(),
-          type: 'message'
-        });
+        await addAgentMessage(member.id, member.introduction);
       }
-
-      // Show progress message
-      await addProgressMessage();
 
       // Get tasks
       const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
@@ -228,38 +245,15 @@ export function useChatSimulation() {
       const { tasks: newTasks } = await tasksResponse.json();
       setTasks(newTasks);
 
-      // Show task assignments
+      // Show task assignments and execute tasks
       for (const task of newTasks) {
         const agent = getAgentById(task.assignedTo);
-        await delay(getRandomDelay());
-        await addMessage({
-          id: generateId(),
-          agentId: 'coordinator',
-          content: `${agent.name} 将负责 ${task.title}：${task.description}`,
-          timestamp: new Date(),
-          type: 'task-assignment',
-          taskId: task.id
-        });
+        await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
+        await executeAgentTask(task);
       }
 
-      // Get promotion plan
-      const promotionResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/promotion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const { plan } = await promotionResponse.json();
-
-      // Show promotion plan
-      await addProgressMessage();
-      await addMessage({
-        id: generateId(),
-        agentId: 'coordinator',
-        content: '我们已经制定了详细的推广计划，包括多个账号的协同推广策略。现在开始执行！',
-        timestamp: new Date(),
-        type: 'message'
-      });
-
+      // Start campaign execution
+      await addAgentMessage('coordinator', '所有任务都已完成！现在开始执行推广计划。');
       setStatus('in-progress');
 
       // Start updating metrics

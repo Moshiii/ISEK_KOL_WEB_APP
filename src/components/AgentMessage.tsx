@@ -18,7 +18,7 @@ const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
   const renderMessageContent = () => {
     if (message.type === 'task-assignment') {
       return (
-        <div className="flex items-center space-x-2 py-1 px-3 bg-gray-100 rounded-lg text-sm">
+        <div className="flex items-center space-x-2 py-1 px-3 bg-gray-100 rounded-lg text-sm text-gray-900">
           <ClipboardCheck size={16} className="text-gray-500" />
           <span dangerouslySetInnerHTML={{ __html: message.content }}></span>
         </div>

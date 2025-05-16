@@ -45,6 +45,16 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
     );
   };
 
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const renderSubTasks = (subTasks: SubTask[], parentTaskId: string) => {
     if (!expandedTasks.includes(parentTaskId)) return null;
 
@@ -117,12 +127,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
               <div className="flex justify-between items-center">
                 <AgentBadge agent={agent} size="sm" />
                 <span className="text-xs text-gray-400">
-                  {task.createdAt.toLocaleDateString([], {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  {formatDate(task.createdAt)}
                 </span>
               </div>
             </div>

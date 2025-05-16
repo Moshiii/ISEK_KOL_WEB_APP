@@ -4,7 +4,7 @@ import ChatWindow from './components/ChatWindow';
 import { useChatSimulation } from './hooks/useChatSimulation';
 
 function App() {
-  const { messages, tasks, typingAgent, status, metrics, startCampaign, sendMessage } = useChatSimulation();
+  const { messages, tasks, typingAgent, status, metrics, twitterSequence, startCampaign, sendMessage } = useChatSimulation();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmitRequest = async (request: string) => {
@@ -47,6 +47,7 @@ function App() {
             typingAgent={typingAgent}
             status={status}
             metrics={metrics}
+            twitterSequence={twitterSequence}
           />
         </div>
       </main>

@@ -4,6 +4,7 @@ import AgentMessage from './AgentMessage';
 import TypingIndicator from './TypingIndicator';
 import TaskList from './TaskList';
 import CampaignMetricsPanel from './CampaignMetrics';
+import TwitterSequence from './TwitterSequence';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -11,6 +12,7 @@ interface ChatWindowProps {
   typingAgent: Agent | null;
   status: 'idle' | 'planning' | 'in-progress' | 'completed';
   metrics?: CampaignMetrics;
+  twitterSequence?: any[];
 }
 
 const defaultMetrics: CampaignMetrics = {
@@ -26,7 +28,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   tasks, 
   typingAgent,
   status,
-  metrics = defaultMetrics
+  metrics = defaultMetrics,
+  twitterSequence = []
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +68,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         
         <div className="w-full md:w-64 lg:w-80 border-t md:border-t-0 md:border-l border-gray-700 overflow-hidden flex flex-col min-h-0 bg-gray-800">
           <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
-            <h3 className="font-medium mb-3 text-gray-200">任务</h3>
-            <TaskList tasks={tasks} />
+            <div className="mb-6">
+              <h3 className="font-medium mb-3 text-gray-200">任务</h3>
+              <TaskList tasks={tasks} />
+            </div>
+            
+            {twitterSequence.length > 0 && (
+              <div>
+                <h3 className="font-medium mb-3 text-gray-200">推广计划</h3>
+                <TwitterSequence sequence={twitterSequence} />
+              </div>
+            )}
           </div>
         </div>
         
@@ -76,4 +88,4 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   );
 };
 
-export default ChatWindow
+export default ChatWindow;

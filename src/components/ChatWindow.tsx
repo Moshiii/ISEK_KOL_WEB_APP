@@ -1,32 +1,21 @@
 import React, { useEffect, useRef } from 'react';
-import { Message, Agent, Task, CampaignMetrics } from '../types';
+import { Message, Agent, Task } from '../types';
 import AgentMessage from './AgentMessage';
 import TypingIndicator from './TypingIndicator';
 import TaskList from './TaskList';
-import CampaignMetricsPanel from './CampaignMetrics';
 
 interface ChatWindowProps {
   messages: Message[];
   tasks: Task[];
   typingAgent: Agent | null;
   status: 'idle' | 'planning' | 'in-progress' | 'completed';
-  metrics?: CampaignMetrics;
 }
-
-const defaultMetrics: CampaignMetrics = {
-  totalPosts: 0,
-  totalLikes: 0,
-  totalReplies: 0,
-  totalRetweets: 0,
-  twitterAccounts: []
-};
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ 
   messages, 
   tasks, 
   typingAgent,
-  status,
-  metrics = defaultMetrics
+  status
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -69,8 +58,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <TaskList tasks={tasks} />
           </div>
         </div>
-        
-        <CampaignMetricsPanel metrics={metrics} />
       </div>
     </div>
   );

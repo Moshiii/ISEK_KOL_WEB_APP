@@ -4,22 +4,13 @@ import ChatWindow from './components/ChatWindow';
 import { useChatSimulation } from './hooks/useChatSimulation';
 
 function App() {
-  const { messages, tasks, typingAgent, status, metrics, startCampaign, sendMessage } = useChatSimulation();
+  const { messages, tasks, typingAgent, status, startCampaign } = useChatSimulation();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmitRequest = async (request: string) => {
     try {
       setIsProcessing(true);
       await startCampaign(request);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSendMessage = async (content: string) => {
-    try {
-      setIsProcessing(true);
-      await sendMessage(content);
     } finally {
       setIsProcessing(false);
     }
@@ -34,9 +25,9 @@ function App() {
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
         <div className="w-full md:w-1/4 lg:w-1/5 border-r border-gray-700 overflow-hidden">
           <UserInput 
-            onSubmit={messages.length === 0 ? handleSubmitRequest : handleSendMessage} 
+            onSubmit={handleSubmitRequest}
             isProcessing={isProcessing}
-            placeholder={messages.length === 0 ? "请描述您的推特活动..." : "请回复Alex的问题..."}
+            placeholder="请描述您的推特活动..."
           />
         </div>
         
@@ -46,7 +37,6 @@ function App() {
             tasks={tasks}
             typingAgent={typingAgent}
             status={status}
-            metrics={metrics}
           />
         </div>
       </main>
@@ -54,4 +44,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

@@ -136,7 +136,7 @@ agents = [
     {
         "id": "designer",
         "name": "Taylor",
-        "role": "designer",
+        "role": "designer", 
         "avatar": "designer",
         "color": "#8B5CF6",
         "description": "Creative designer who handles visual elements and branding"
@@ -339,6 +339,8 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
+    campaign = campaigns[campaign_id]
+    
     # Add user message
     user_message = {
         "id": generate_id(),
@@ -347,7 +349,7 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
         "timestamp": datetime.now().isoformat(),
         "type": "message"
     }
-    campaigns[campaign_id]["messages"].append(user_message)
+    campaign["messages"].append(user_message)
     
     # Get AI response
     coordinator_response = await get_openai_response(message.content, campaign_id)
@@ -358,19 +360,19 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
         "timestamp": datetime.now().isoformat(),
         "type": "message"
     }
-    campaigns[campaign_id]["messages"].append(coordinator_message)
+    campaign["messages"].append(coordinator_message)
     
     # Check if information gathering is complete
     if "已经收集到足够的细节" in coordinator_response:
-        campaigns[campaign_id]["info_gathering_complete"] = True
+        campaign["info_gathering_complete"] = True
         
         # Add recruitment messages
         recruitment_messages = create_recruitment_messages()
-        campaigns[campaign_id]["messages"].extend(recruitment_messages)
+        campaign["messages"].extend(recruitment_messages)
         
         # Generate tasks using OpenAI
-        tasks = await generate_tasks(campaigns[campaign_id]["request"])
-        campaigns[campaign_id]["tasks"] = tasks
+        tasks = await generate_tasks(campaign["request"])
+        campaign["tasks"] = tasks
         
         # Add task assignment messages
         for task in tasks:
@@ -383,9 +385,9 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
                 "type": "task-assignment",
                 "taskId": task["id"]
             }
-            campaigns[campaign_id]["messages"].append(task_message)
+            campaign["messages"].append(task_message)
     
-    return campaigns[campaign_id]
+    return campaign
 
 @app.get("/api/campaign/{campaign_id}")
 async def get_campaign(campaign_id: str):

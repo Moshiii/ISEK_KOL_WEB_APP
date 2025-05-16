@@ -9,6 +9,7 @@ import uuid
 import openai
 from dotenv import load_dotenv
 import os
+import random
 
 # Load environment variables
 load_dotenv()
@@ -143,6 +144,19 @@ agents = [
     }
 ]
 
+THINKING_MESSAGES = [
+    "让我思考一下最佳的执行方案...",
+    "正在分析市场趋势和目标受众...",
+    "正在评估不同策略的可行性...",
+    "正在设计任务分配方案...",
+    "正在制定详细的执行计划...",
+    "正在考虑各种可能的营销角度...",
+    "正在规划时间线和里程碑...",
+    "正在评估资源分配方案...",
+    "正在思考如何最大化活动效果...",
+    "正在制定具体的实施步骤..."
+]
+
 async def get_openai_response(user_input: str, campaign_id: str) -> str:
     # Build conversation history
     conversation_history = []
@@ -190,6 +204,17 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
     except Exception as e:
         print(f"OpenAI API error: {e}")
         return "抱歉，我现在遇到了一些技术问题。让我们稍后继续我们的对话。"
+
+async def add_thinking_message(campaign: Dict) -> None:
+    thinking_message = {
+        "id": generate_id(),
+        "agentId": "coordinator",
+        "content": random.choice(THINKING_MESSAGES),
+        "timestamp": datetime.now().isoformat(),
+        "type": "message"
+    }
+    campaign["messages"].append(thinking_message)
+    await asyncio.sleep(1.5)  # Add a delay to make it feel more natural
 
 async def generate_tasks(campaign_request: str) -> List[Dict]:
     system_message = """你是一个推特活动策划专家。请根据用户的活动需求，生成一个详细的任务列表。每个任务都应该包含：
@@ -370,9 +395,15 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
         recruitment_messages = create_recruitment_messages()
         campaign["messages"].extend(recruitment_messages)
         
+        # Add a thinking message before generating tasks
+        await add_thinking_message(campaign)
+        
         # Generate tasks using OpenAI
         tasks = await generate_tasks(campaign["request"])
         campaign["tasks"] = tasks
+        
+        # Add another thinking message
+        await add_thinking_message(campaign)
         
         # Add task assignment messages
         for task in tasks:
@@ -386,6 +417,8 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
                 "taskId": task["id"]
             }
             campaign["messages"].append(task_message)
+            # Add a small delay between task assignments
+            await asyncio.sleep(0.5)
     
     return campaign
 

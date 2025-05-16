@@ -86,10 +86,25 @@ export function useChatSimulation() {
     });
   };
 
+  const addUserMessage = (content: string) => {
+    const userMessage: Message = {
+      id: generateId(),
+      agentId: 'user',
+      content,
+      timestamp: new Date(),
+      type: 'message'
+    };
+    setMessages(prev => [...prev, userMessage]);
+  };
+
   const startCampaign = async (request: string) => {
     try {
       resetChat();
       setStatus('planning');
+      
+      // Immediately show user message
+      addUserMessage(request);
+      setTypingAgent(getAgentById('coordinator'));
       
       const result = await createCampaign(request);
       
@@ -97,10 +112,15 @@ export function useChatSimulation() {
         const { campaign: newCampaign } = result;
         
         setCampaign(newCampaign);
-        setMessages(newCampaign.messages.map(msg => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })));
+        setMessages(prev => [
+          ...prev,
+          ...newCampaign.messages
+            .filter(msg => msg.agentId !== 'user') // Skip user messages as we've already added them
+            .map(msg => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }))
+        ]);
         
         if (newCampaign.tasks) {
           setTasks(newCampaign.tasks.map(task => ({
@@ -109,8 +129,10 @@ export function useChatSimulation() {
           })));
         }
       }
+      setTypingAgent(null);
     } catch (error) {
       console.error('Failed to start campaign:', error);
+      setTypingAgent(null);
       throw error;
     }
   };
@@ -119,15 +141,22 @@ export function useChatSimulation() {
     if (!campaign) return;
     
     try {
+      // Immediately show user message
+      addUserMessage(content);
       setTypingAgent(getAgentById('coordinator'));
       
       const updatedCampaign = await sendUserMessage(campaign.id, content);
       
       setCampaign(updatedCampaign);
-      setMessages(updatedCampaign.messages.map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp)
-      })));
+      setMessages(prev => [
+        ...prev,
+        ...updatedCampaign.messages
+          .filter(msg => msg.agentId !== 'user' && !prev.some(p => p.id === msg.id))
+          .map(msg => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+      ]);
       
       if (updatedCampaign.tasks) {
         setTasks(updatedCampaign.tasks.map(task => ({

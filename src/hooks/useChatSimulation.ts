@@ -326,6 +326,7 @@ export function useChatSimulation() {
     typingAgent,
     status,
     metrics,
+    twitterSequence,
     startCampaign,
     sendMessage
   };

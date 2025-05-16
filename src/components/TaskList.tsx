@@ -45,9 +45,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
     );
   };
 
-  const formatDate = (date: Date | string) => {
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString([], {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString([], {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

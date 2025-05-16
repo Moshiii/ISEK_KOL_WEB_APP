@@ -16,7 +16,7 @@ export interface SubTask {
   parentTaskId: string;
   assignedTo: string;
   status: 'pending' | 'in-progress' | 'completed';
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface Task {
@@ -25,7 +25,7 @@ export interface Task {
   description: string;
   assignedTo: string;
   status: 'pending' | 'in-progress' | 'completed';
-  createdAt: Date;
+  createdAt: string;
   subTasks: SubTask[];
 }
 

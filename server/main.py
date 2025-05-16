@@ -294,9 +294,6 @@ async def create_campaign(campaign: CampaignRequest):
     try:
         campaign_id = generate_id()
         
-        # Create recruitment messages
-        recruitment_messages = create_recruitment_messages()
-        
         # Add user's initial message
         user_message = {
             "id": generate_id(),
@@ -316,36 +313,11 @@ async def create_campaign(campaign: CampaignRequest):
             "type": "message"
         }
         
-        # Generate tasks using OpenAI
-        tasks = await generate_tasks(campaign.request)
-        
-        # Add task assignment messages
-        task_messages = []
-        for task in tasks:
-            agent = get_agent_by_id(task["assignedTo"])
-            task_message = {
-                "id": generate_id(),
-                "agentId": "coordinator",
-                "content": f"<strong>{agent['name']}</strong> 将负责 <strong>{task['title']}</strong>：{task['description']}",
-                "timestamp": datetime.now().isoformat(),
-                "type": "task-assignment",
-                "taskId": task["id"]
-            }
-            task_messages.append(task_message)
-        
-        # Combine all messages in order
-        all_messages = [
-            *recruitment_messages,
-            user_message,
-            coordinator_message,
-            *task_messages
-        ]
-        
         new_campaign = {
             "id": campaign_id,
             "request": campaign.request,
-            "tasks": tasks,
-            "messages": all_messages,
+            "tasks": [],
+            "messages": [user_message, coordinator_message],
             "status": "planning",
             "createdAt": datetime.now().isoformat(),
             "metrics": {
@@ -397,6 +369,10 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
     # Check if information gathering is complete
     if "已经收集到足够的细节" in coordinator_response:
         campaigns[campaign_id]["info_gathering_complete"] = True
+        
+        # Add recruitment messages
+        recruitment_messages = create_recruitment_messages()
+        campaigns[campaign_id]["messages"].extend(recruitment_messages)
         
         # Generate tasks using OpenAI
         tasks = await generate_tasks(campaigns[campaign_id]["request"])

@@ -78,6 +78,8 @@ export function useChatSimulation() {
   const [metrics, setMetrics] = useState<CampaignMetrics>(initialMetrics);
   const [metricsUpdateCount, setMetricsUpdateCount] = useState(0);
   const [metricsInterval, setMetricsInterval] = useState<NodeJS.Timeout | null>(null);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [twitterSequence, setTwitterSequence] = useState<any[]>([]);
 
   useEffect(() => {
     return () => {
@@ -230,78 +232,87 @@ export function useChatSimulation() {
       type: 'message'
     });
 
-    if (content.trim() !== '确认') {
-      await addAgentMessage('coordinator', '请回复"确认"以开始执行推广计划。');
-      return;
-    }
-
     try {
-      // Get team
-      const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const { team } = await teamResponse.json();
+      if (!awaitingConfirmation) {
+        if (content.trim() !== '确认') {
+          await addAgentMessage('coordinator', '请回复"确认"以开始执行推广计划。');
+          return;
+        }
 
-      // Show team introductions
-      for (const member of team) {
-        await addAgentMessage(member.id, member.introduction);
-      }
+        // Get team
+        const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const { team } = await teamResponse.json();
 
-      // Get tasks
-      const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const { tasks: newTasks } = await tasksResponse.json();
-      setTasks(newTasks);
+        // Show team introductions
+        for (const member of team) {
+          await addAgentMessage(member.id, member.introduction);
+        }
 
-      // Show task assignments and execute tasks
-      for (const task of newTasks) {
-        const agent = getAgentById(task.assignedTo);
-        await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
-        await executeAgentTask(task);
-      }
+        // Get tasks
+        const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const { tasks: newTasks } = await tasksResponse.json();
+        setTasks(newTasks);
 
-      // Get Twitter sequence
-      const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const { sequence } = await sequenceResponse.json();
+        // Show task assignments and execute tasks
+        for (const task of newTasks) {
+          const agent = getAgentById(task.assignedTo);
+          await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
+          await executeAgentTask(task);
+        }
 
-      // Show Twitter sequence plan
-      await addAgentMessage('coordinator', '我们已经制定了详细的推广计划，以下是具体的执行步骤：');
-      
-      for (const action of sequence) {
-        const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
-          action.account,
-          action.target_account || action.account,
-          action.content || ''
-        );
-        await addAgentMessage('coordinator', message);
-      }
+        // Get Twitter sequence
+        const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const { sequence } = await sequenceResponse.json();
+        setTwitterSequence(sequence);
 
-      await addAgentMessage('coordinator', '这是我们的推广计划，您觉得如何？如果同意，我们就开始执行。');
+        // Show Twitter sequence plan
+        await addAgentMessage('coordinator', '我们已经制定了详细的推广计划，以下是具体的执行步骤：');
+        
+        for (const action of sequence) {
+          const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
+            action.account,
+            action.target_account || action.account,
+            action.content || ''
+          );
+          await addAgentMessage('coordinator', message);
+        }
 
-      // Confirm campaign
-      const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
+        await addAgentMessage('coordinator', '这是我们的推广计划，如果同意请再次回复"确认"开始执行。');
+        setAwaitingConfirmation(true);
+      } else {
+        if (content.trim() !== '确认') {
+          await addAgentMessage('coordinator', '如果您同意这个推广计划，请回复"确认"开始执行。');
+          return;
+        }
 
-      if (confirmResponse.ok) {
-        // Start campaign execution
-        await addAgentMessage('coordinator', '太好了！我们现在开始执行推广计划。');
-        setStatus('in-progress');
+        // Confirm campaign
+        const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
 
-        // Start updating metrics
-        const interval = setInterval(updateMetrics, getRandomDelay());
-        setMetricsInterval(interval);
+        if (confirmResponse.ok) {
+          // Start campaign execution
+          await addAgentMessage('coordinator', '太好了！我们现在开始执行推广计划。');
+          setStatus('in-progress');
+
+          // Start updating metrics
+          const interval = setInterval(updateMetrics, getRandomDelay());
+          setMetricsInterval(interval);
+        }
       }
     } catch (error) {
       console.error('Error:', error);

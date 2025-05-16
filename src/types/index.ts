@@ -46,6 +46,7 @@ export interface Campaign {
   status: 'planning' | 'in-progress' | 'completed';
   createdAt: Date;
   metrics: CampaignMetrics;
+  info_gathering_complete: boolean;
 }
 
 export interface TwitterAccount {

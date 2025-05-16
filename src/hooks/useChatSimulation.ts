@@ -90,9 +90,10 @@ export function useChatSimulation() {
   }, [metricsInterval]);
 
   useEffect(() => {
-    if (metricsUpdateCount >= 10 && metricsInterval) {
+    if (metricsUpdateCount >= 20 && metricsInterval) {
       clearInterval(metricsInterval);
       setMetricsInterval(null);
+      setStatus('completed');
     }
   }, [metricsUpdateCount, metricsInterval]);
 
@@ -171,23 +172,19 @@ export function useChatSimulation() {
   const executeAgentTask = async (task: Task) => {
     const messages = AGENT_TASK_MESSAGES[task.assignedTo as keyof typeof AGENT_TASK_MESSAGES];
     
-    // Start task
     await updateTaskStatus(task.id, 'in-progress');
     await addAgentMessage(task.assignedTo, messages[0]);
     await delay(getRandomDelay());
     
-    // Progress update
     await addAgentMessage(task.assignedTo, messages[1]);
     await delay(getRandomDelay());
     
-    // Complete task
     await updateTaskStatus(task.id, 'completed');
     await addAgentMessage(task.assignedTo, messages[2]);
   };
 
   const startCampaign = async (request: string) => {
     try {
-      // Show user message immediately
       await addMessage({
         id: generateId(),
         agentId: 'user',
@@ -196,10 +193,8 @@ export function useChatSimulation() {
         type: 'message'
       });
 
-      // Show coordinator thinking
       await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
 
-      // Get campaign plan
       const response = await fetch('http://localhost:8000/api/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,10 +204,8 @@ export function useChatSimulation() {
       const result = await response.json();
       setCampaign(result.campaign);
 
-      // Show plan
       await addAgentMessage('coordinator', result.campaign.messages[0].content);
 
-      // Show confirmation request
       await addAgentMessage('coordinator', '您觉得这个方案怎么样？如果同意，请回复"确认"开始执行。');
     } catch (error) {
       console.error('Error:', error);
@@ -223,7 +216,6 @@ export function useChatSimulation() {
   const sendMessage = async (content: string) => {
     if (!campaign) return;
 
-    // Show user message immediately
     await addMessage({
       id: generateId(),
       agentId: 'user',
@@ -239,7 +231,6 @@ export function useChatSimulation() {
           return;
         }
 
-        // Get team
         const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -247,12 +238,10 @@ export function useChatSimulation() {
         });
         const { team } = await teamResponse.json();
 
-        // Show team introductions
         for (const member of team) {
           await addAgentMessage(member.id, member.introduction);
         }
 
-        // Get tasks
         const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -261,14 +250,12 @@ export function useChatSimulation() {
         const { tasks: newTasks } = await tasksResponse.json();
         setTasks(newTasks);
 
-        // Show task assignments and execute tasks
         for (const task of newTasks) {
           const agent = getAgentById(task.assignedTo);
           await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
           await executeAgentTask(task);
         }
 
-        // Get Twitter sequence
         const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -277,7 +264,6 @@ export function useChatSimulation() {
         const { sequence } = await sequenceResponse.json();
         setTwitterSequence(sequence);
 
-        // Show Twitter sequence plan
         await addAgentMessage('coordinator', '我们已经制定了详细的推广计划，以下是具体的执行步骤：');
         
         for (const action of sequence) {
@@ -297,7 +283,10 @@ export function useChatSimulation() {
           return;
         }
 
-        // Confirm campaign
+        if (metricsInterval) {
+          clearInterval(metricsInterval);
+        }
+
         const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -305,12 +294,11 @@ export function useChatSimulation() {
         });
 
         if (confirmResponse.ok) {
-          // Start campaign execution
           await addAgentMessage('coordinator', '太好了！我们现在开始执行推广计划。');
           setStatus('in-progress');
+          setMetricsUpdateCount(0);
 
-          // Start updating metrics
-          const interval = setInterval(updateMetrics, getRandomDelay());
+          const interval = setInterval(updateMetrics, 2000);
           setMetricsInterval(interval);
         }
       }
@@ -330,4 +318,4 @@ export function useChatSimulation() {
     startCampaign,
     sendMessage
   };
-};
+}

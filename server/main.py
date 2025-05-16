@@ -102,6 +102,14 @@ class MetricsUpdateRequest(BaseModel):
 campaigns = {}
 agents = [
     {
+        "id": "user",
+        "name": "用户",
+        "role": "user",
+        "avatar": "user",
+        "color": "#F43F5E",
+        "description": "User of the system"
+    },
+    {
         "id": "coordinator",
         "name": "Alex",
         "role": "coordinator",
@@ -156,7 +164,7 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
     
     # Add system message to guide the AI's behavior
     system_message = """你是Alex，一个专业的推特活动协调员。你的任务是：
-    1. 根据用户的第一次输, 生成一个推特活动的完整的宏观计划, 涵盖：
+    1. 根据用户的第一次输入, 生成一个推特活动的完整的宏观计划, 涵盖：
         - 产品名称： 产品/服务名称
         - 产品/服务类型： 产品/服务类型/行业
         - 产品/服务描述： 产品/服务的简要描述
@@ -184,11 +192,51 @@ async def get_openai_response(user_input: str, campaign_id: str) -> str:
             temperature=0.7,
             max_tokens=300
         )
-        print(conversation_history)
         return response.choices[0].message.content
     except Exception as e:
         print(f"OpenAI API error: {e}")
         return "抱歉，我现在遇到了一些技术问题。让我们稍后继续我们的对话。"
+
+async def generate_tasks(campaign_request: str) -> List[Dict]:
+    system_message = """你是一个推特活动策划专家。请根据用户的活动需求，生成一个详细的任务列表。每个任务都应该包含：
+    - title: 任务标题
+    - description: 任务描述
+    - assignedTo: 负责人角色 (researcher/writer/designer/coordinator)
+    - subTasks: 子任务列表，每个子任务包含相同的字段
+
+    以JSON格式返回任务列表。确保任务分配合理，覆盖活动所需的所有方面。"""
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": campaign_request}
+            ],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        
+        tasks_json = response.choices[0].message.content
+        tasks_list = json.loads(tasks_json)
+        
+        # Add IDs and timestamps to tasks and subtasks
+        for task in tasks_list:
+            task["id"] = generate_id()
+            task["status"] = "pending"
+            task["createdAt"] = datetime.now().isoformat()
+            
+            if "subTasks" in task:
+                for subtask in task["subTasks"]:
+                    subtask["id"] = generate_id()
+                    subtask["parentTaskId"] = task["id"]
+                    subtask["status"] = "pending"
+                    subtask["createdAt"] = datetime.now().isoformat()
+        
+        return tasks_list
+    except Exception as e:
+        print(f"OpenAI API error in generate_tasks: {e}")
+        return []
 
 def generate_id() -> str:
     return str(uuid.uuid4())
@@ -268,17 +316,35 @@ async def create_campaign(campaign: CampaignRequest):
             "type": "message"
         }
         
+        # Generate tasks using OpenAI
+        tasks = await generate_tasks(campaign.request)
+        
+        # Add task assignment messages
+        task_messages = []
+        for task in tasks:
+            agent = get_agent_by_id(task["assignedTo"])
+            task_message = {
+                "id": generate_id(),
+                "agentId": "coordinator",
+                "content": f"<strong>{agent['name']}</strong> 将负责 <strong>{task['title']}</strong>：{task['description']}",
+                "timestamp": datetime.now().isoformat(),
+                "type": "task-assignment",
+                "taskId": task["id"]
+            }
+            task_messages.append(task_message)
+        
         # Combine all messages in order
         all_messages = [
             *recruitment_messages,
             user_message,
-            coordinator_message
+            coordinator_message,
+            *task_messages
         ]
         
         new_campaign = {
             "id": campaign_id,
             "request": campaign.request,
-            "tasks": [],
+            "tasks": tasks,
             "messages": all_messages,
             "status": "planning",
             "createdAt": datetime.now().isoformat(),
@@ -331,110 +397,9 @@ async def add_user_message(campaign_id: str, message: UserMessageRequest):
     # Check if information gathering is complete
     if "已经收集到足够的细节" in coordinator_response:
         campaigns[campaign_id]["info_gathering_complete"] = True
-        # Generate tasks and start the campaign
-        task_templates = {
-            "twitter": [
-                {
-                    "title": "受众分析",
-                    "description": "分析目标推特用户群体和互动模式",
-                    "assignedTo": "researcher",
-                    "subTasks": [
-                        {
-                            "title": "用户画像分析",
-                            "description": "创建目标受众的详细用户画像",
-                            "assignedTo": "researcher"
-                        },
-                        {
-                            "title": "互动行为分析",
-                            "description": "分析目标用户的互动习惯和偏好",
-                            "assignedTo": "researcher"
-                        }
-                    ]
-                },
-                {
-                    "title": "内容策略",
-                    "description": "制定推文主题和发布计划",
-                    "assignedTo": "coordinator",
-                    "subTasks": [
-                        {
-                            "title": "主题规划",
-                            "description": "确定推文主题和关键信息点",
-                            "assignedTo": "coordinator"
-                        },
-                        {
-                            "title": "发布时间规划",
-                            "description": "制定最优发布时间表",
-                            "assignedTo": "coordinator"
-                        }
-                    ]
-                },
-                {
-                    "title": "推文文案",
-                    "description": "创作引人入胜的推文和话题内容",
-                    "assignedTo": "writer",
-                    "subTasks": [
-                        {
-                            "title": "主推文创作",
-                            "description": "编写核心推文内容",
-                            "assignedTo": "writer"
-                        },
-                        {
-                            "title": "话题标签策略",
-                            "description": "设计和优化话题标签",
-                            "assignedTo": "writer"
-                        }
-                    ]
-                },
-                {
-                    "title": "视觉设计",
-                    "description": "设计推文配图和视觉元素",
-                    "assignedTo": "designer",
-                    "subTasks": [
-                        {
-                            "title": "图片设计",
-                            "description": "创作推文配图",
-                            "assignedTo": "designer"
-                        },
-                        {
-                            "title": "视觉风格指南",
-                            "description": "制定统一的视觉风格标准",
-                            "assignedTo": "designer"
-                        }
-                    ]
-                }
-            ]
-        }
         
-        # Create tasks
-        tasks = []
-        for template in task_templates["twitter"]:
-            task_id = generate_id()
-            task = {
-                "id": task_id,
-                "title": template["title"],
-                "description": template["description"],
-                "assignedTo": template["assignedTo"],
-                "status": "pending",
-                "createdAt": datetime.now().isoformat(),
-                "subTasks": []
-            }
-            
-            # Create subtasks
-            for subtask_template in template["subTasks"]:
-                subtask_id = generate_id()
-                subtask = {
-                    "id": subtask_id,
-                    "title": subtask_template["title"],
-                    "description": subtask_template["description"],
-                    "parentTaskId": task_id,
-                    "assignedTo": subtask_template["assignedTo"],
-                    "status": "pending",
-                    "createdAt": datetime.now().isoformat()
-                }
-                task["subTasks"].append(subtask)
-            
-            tasks.append(task)
-        
+        # Generate tasks using OpenAI
+        tasks = await generate_tasks(campaigns[campaign_id]["request"])
         campaigns[campaign_id]["tasks"] = tasks
         
         # Add task assignment messages

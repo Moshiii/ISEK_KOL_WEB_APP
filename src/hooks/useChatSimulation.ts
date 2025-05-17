@@ -306,6 +306,7 @@ export function useChatSimulation() {
             );
             await addAgentMessage('coordinator', message);
           }
+          //增长数字
           const interval = setInterval(updateMetrics, 500);
           setMetricsInterval(interval);
         }

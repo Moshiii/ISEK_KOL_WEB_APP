@@ -19,30 +19,30 @@ const TwitterSequence: React.FC<TwitterSequenceProps> = ({ sequence }) => {
   const getActionIcon = (type: TwitterAction['action_type']) => {
     switch (type) {
       case 'post':
-        return <Send size={16} className="text-[#5370FF]" />;
+        return <Send size={14} className="text-[#5370FF]" />;
       case 'like':
-        return <Heart size={16} className="text-[#FF66C5]" />;
+        return <Heart size={14} className="text-[#FF66C5]" />;
       case 'reply':
-        return <MessageSquare size={16} className="text-[#5370FF]" />;
+        return <MessageSquare size={14} className="text-[#5370FF]" />;
       case 'retweet':
-        return <Repeat2 size={16} className="text-[#FF66C5]" />;
+        return <Repeat2 size={14} className="text-[#FF66C5]" />;
       case 'follow':
-        return <UserPlus size={16} className="text-[#5370FF]" />;
+        return <UserPlus size={14} className="text-[#5370FF]" />;
     }
   };
 
   const getActionText = (action: TwitterAction) => {
     switch (action.action_type) {
       case 'post':
-        return `发布了推文`;
+        return `@${action.account} 发布了推文${action.content ? `：${action.content}` : ''}`;
       case 'like':
-        return `点赞了 @${action.target_account} 的推文`;
+        return `@${action.account} 点赞了 @${action.target_account} 的推文`;
       case 'reply':
-        return `回复了 @${action.target_account}`;
+        return `@${action.account} 回复了 @${action.target_account}${action.content ? `：${action.content}` : ''}`;
       case 'retweet':
-        return `转发了 @${action.target_account} 的推文`;
+        return `@${action.account} 转发了 @${action.target_account} 的推文`;
       case 'follow':
-        return `关注了 @${action.target_account}`;
+        return `@${action.account} 关注了 @${action.target_account}`;
     }
   };
 
@@ -85,22 +85,14 @@ const TwitterSequence: React.FC<TwitterSequenceProps> = ({ sequence }) => {
       </div>
 
       {isExpanded && (
-        <div className="mt-4 space-y-2 pt-4 border-t border-gray-700">
+        <div className="mt-4 space-y-1 pt-4 border-t border-gray-700">
           {sequence.map((action, index) => (
             <div 
               key={index}
-              className="p-2 rounded bg-gray-700/30 border border-gray-700"
+              className="flex items-center gap-2 text-sm text-gray-300 py-1"
             >
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-[#5370FF]">@{action.account}</span>
-                <div className="flex items-center gap-1 text-gray-300">
-                  {getActionIcon(action.action_type)}
-                  <span className="text-sm">{getActionText(action)}</span>
-                </div>
-              </div>
-              {action.content && (
-                <p className="text-sm text-gray-300 ml-6 mt-1">{action.content}</p>
-              )}
+              {getActionIcon(action.action_type)}
+              <span>{getActionText(action)}</span>
             </div>
           ))}
         </div>

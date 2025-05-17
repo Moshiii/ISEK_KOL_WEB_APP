@@ -77,7 +77,7 @@ export function useChatSimulation() {
   const [status, setStatus] = useState<'idle' | 'planning' | 'in-progress' | 'completed'>('idle');
   const [metrics, setMetrics] = useState<CampaignMetrics>(initialMetrics);
   const [metricsUpdateCount, setMetricsUpdateCount] = useState(0);
-  const [metricsInterval, setMetricsInterval] = useState<NodeJS.Timeout | null>(null);
+  const [metricsInterval, setMetricsInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [twitterSequence, setTwitterSequence] = useState<any[]>([]);
 
@@ -264,16 +264,16 @@ export function useChatSimulation() {
         const { sequence } = await sequenceResponse.json();
         setTwitterSequence(sequence);
 
-        await addAgentMessage('coordinator', '我们已经制定了详细的推广计划，以下是具体的执行步骤：');
+        await addAgentMessage('coordinator', '我们已经制定了详细的推广计划在右侧的任务栏中');
         
-        for (const action of sequence) {
-          const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
-            action.account,
-            action.target_account || action.account,
-            action.content || ''
-          );
-          await addAgentMessage('coordinator', message);
-        }
+        // for (const action of sequence) {
+        //   const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
+        //     action.account,
+        //     action.target_account || action.account,
+        //     action.content || ''
+        //   );
+        //   await addAgentMessage('coordinator', message);
+        // }
 
         await addAgentMessage('coordinator', '这是我们的推广计划，如果同意请再次回复"确认"开始执行。');
         setAwaitingConfirmation(true);
@@ -282,7 +282,6 @@ export function useChatSimulation() {
           await addAgentMessage('coordinator', '如果您同意这个推广计划，请回复"确认"开始执行。');
           return;
         }
-
         if (metricsInterval) {
           clearInterval(metricsInterval);
         }
@@ -298,7 +297,16 @@ export function useChatSimulation() {
           setStatus('in-progress');
           setMetricsUpdateCount(0);
 
-          const interval = setInterval(updateMetrics, 2000);
+          //模拟推送流程
+          for (const action of twitterSequence) {
+            const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
+              action.account,
+              action.target_account || action.account,
+              action.content || ''
+            );
+            await addAgentMessage('coordinator', message);
+          }
+          const interval = setInterval(updateMetrics, 500);
           setMetricsInterval(interval);
         }
       }

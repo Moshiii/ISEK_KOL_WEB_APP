@@ -1,3 +1,4 @@
+import json
 import time
 
 from isek.agent.distributed_agent import DistributedAgent
@@ -34,4 +35,10 @@ Mani_agent.tool_manager.register_tools([
 ])
 Mani_agent.build(daemon=True)
 time.sleep(5)
-Mani_agent.send_p2p_message("/ip4/127.0.0.1/tcp/52533/ws/p2p/12D3KooWEDRrjHdsGA1kKYgUYKQtahYz2GguQB8aiFn3i5qZJAv4/p2p-circuit/p2p/12D3KooWT1GerV2NaaNFNXEhMrxuSg3RiBCpdw23eFYTX5HVfBC1", "hello")
+
+message = {
+    "name": Mani_agent.persona.name,
+    "query": "hello",
+    "peerid": Mani_agent.peer_id
+}
+Mani_agent.send_p2p_message("/ip4/45.32.115.124/tcp/9090/ws/p2p/12D3KooWEm7y24CfhEUAvNcQH1osnwhHt3ibGYZdKdLpezQt1r4Y/p2p-circuit/p2p/12D3KooWFMCoVcaJUCyPN2o9c1C6ndEQeXoebFg15EcLXrxp2vw4", json.dumps(message, ensure_ascii=False))

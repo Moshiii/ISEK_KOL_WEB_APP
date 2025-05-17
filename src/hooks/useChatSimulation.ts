@@ -97,36 +97,38 @@ export function useChatSimulation() {
     }
   }, [metricsUpdateCount, metricsInterval]);
 
-  const updateMetrics = () => {
-    setMetricsUpdateCount(prev => prev + 1);
+  const updateMetricsForAction = (action: any) => {
     setMetrics(prev => {
       const newAccounts = [...prev.twitterAccounts];
+      let account = newAccounts.find(acc => acc.handle === action.account);
       
-      if (Math.random() > 0.7 && newAccounts.length < TWITTER_HANDLES.length) {
-        const unusedHandles = TWITTER_HANDLES.filter(
-          handle => !newAccounts.some(acc => acc.handle === handle)
-        );
-        if (unusedHandles.length > 0) {
-          const newHandle = unusedHandles[Math.floor(Math.random() * unusedHandles.length)];
-          newAccounts.push({
-            handle: newHandle,
-            postsCount: 0,
-            likesCount: 0,
-            repliesCount: 0,
-            retweetsCount: 0
-          });
-        }
+      if (!account) {
+        account = {
+          handle: action.account,
+          postsCount: 0,
+          likesCount: 0,
+          repliesCount: 0,
+          retweetsCount: 0
+        };
+        newAccounts.push(account);
       }
 
-      const updatedAccounts = newAccounts.map(account => ({
-        ...account,
-        postsCount: account.postsCount + Math.floor(Math.random() * 2),
-        likesCount: account.likesCount + Math.floor(Math.random() * 5),
-        repliesCount: account.repliesCount + Math.floor(Math.random() * 3),
-        retweetsCount: account.retweetsCount + Math.floor(Math.random() * 2)
-      }));
+      switch (action.action_type) {
+        case 'post':
+          account.postsCount += 1;
+          break;
+        case 'like':
+          account.likesCount += 1;
+          break;
+        case 'reply':
+          account.repliesCount += 1;
+          break;
+        case 'retweet':
+          account.retweetsCount += 1;
+          break;
+      }
 
-      const totals = updatedAccounts.reduce((acc, account) => ({
+      const totals = newAccounts.reduce((acc, account) => ({
         totalPosts: acc.totalPosts + account.postsCount,
         totalLikes: acc.totalLikes + account.likesCount,
         totalReplies: acc.totalReplies + account.repliesCount,
@@ -140,7 +142,7 @@ export function useChatSimulation() {
 
       return {
         ...totals,
-        twitterAccounts: updatedAccounts
+        twitterAccounts: newAccounts
       };
     });
   };
@@ -265,16 +267,6 @@ export function useChatSimulation() {
         setTwitterSequence(sequence);
 
         await addAgentMessage('coordinator', '我们已经制定了详细的推广计划在右侧的任务栏中');
-        
-        // for (const action of sequence) {
-        //   const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
-        //     action.account,
-        //     action.target_account || action.account,
-        //     action.content || ''
-        //   );
-        //   await addAgentMessage('coordinator', message);
-        // }
-
         await addAgentMessage('coordinator', '这是我们的推广计划，如果同意请再次回复"确认"开始执行。');
         setAwaitingConfirmation(true);
       } else {
@@ -297,7 +289,7 @@ export function useChatSimulation() {
           setStatus('in-progress');
           setMetricsUpdateCount(0);
 
-          //模拟推送流程
+          // 同步执行推送流程和更新指标
           for (const action of twitterSequence) {
             const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
               action.account,
@@ -305,9 +297,38 @@ export function useChatSimulation() {
               action.content || ''
             );
             await addAgentMessage('coordinator', message);
+            updateMetricsForAction(action);
+            await delay(500);
           }
-          //增长数字
-          const interval = setInterval(updateMetrics, 500);
+
+          // 继续随机增长一段时间
+          const interval = setInterval(() => {
+            setMetricsUpdateCount(prev => prev + 1);
+            setMetrics(prev => {
+              const newAccounts = prev.twitterAccounts.map(account => ({
+                ...account,
+                likesCount: account.likesCount + Math.floor(Math.random() * 2),
+                retweetsCount: account.retweetsCount + Math.floor(Math.random() * 1)
+              }));
+
+              const totals = newAccounts.reduce((acc, account) => ({
+                totalPosts: acc.totalPosts + account.postsCount,
+                totalLikes: acc.totalLikes + account.likesCount,
+                totalReplies: acc.totalReplies + account.repliesCount,
+                totalRetweets: acc.totalRetweets + account.retweetsCount
+              }), {
+                totalPosts: 0,
+                totalLikes: 0,
+                totalReplies: 0,
+                totalRetweets: 0
+              });
+
+              return {
+                ...totals,
+                twitterAccounts: newAccounts
+              };
+            });
+          }, 500);
           setMetricsInterval(interval);
         }
       }

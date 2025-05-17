@@ -53,22 +53,6 @@ html, body {
   }
 }
 
-/* Slide in animation for tasks */
-.animate-slideIn {
-  animation: slideIn 0.5s ease-out forwards;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 /* Custom scrollbar styles */
 .custom-scrollbar {
   scrollbar-width: thin;

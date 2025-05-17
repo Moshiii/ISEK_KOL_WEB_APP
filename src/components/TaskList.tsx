@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Task, SubTask } from '../types';
 import { getAgentById } from '../data/agents';
 import AgentBadge from './AgentBadge';
@@ -9,7 +9,20 @@ interface TaskListProps {
 }
 
 const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
-  const [expandedTasks, setExpandedTasks] = React.useState<string[]>([]);
+  const [expandedTasks, setExpandedTasks] = useState<string[]>([]);
+  const [visibleTasks, setVisibleTasks] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Reset visible tasks when tasks array changes
+    setVisibleTasks([]);
+    
+    // Show tasks one by one with delay
+    tasks.forEach((task, index) => {
+      setTimeout(() => {
+        setVisibleTasks(prev => [...prev, task.id]);
+      }, index * 500); // 500ms delay between each task
+    });
+  }, [tasks]);
 
   if (tasks.length === 0) {
     return <div className="text-gray-400 text-sm italic">暂无任务</div>;
@@ -98,9 +111,15 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
         const agent = getAgentById(task.assignedTo);
         const hasSubTasks = task.subTasks && task.subTasks.length > 0;
         const isExpanded = expandedTasks.includes(task.id);
+        const isVisible = visibleTasks.includes(task.id);
+        
+        if (!isVisible) return null;
         
         return (
-          <div key={task.id}>
+          <div 
+            key={task.id}
+            className="animate-slideIn"
+          >
             <div 
               className="gradient-secondary p-3 rounded-lg border border-gray-700 transition-all hover:border-gray-600 cursor-pointer"
               onClick={() => hasSubTasks && toggleTaskExpanded(task.id)}

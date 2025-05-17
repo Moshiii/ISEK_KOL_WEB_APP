@@ -250,12 +250,13 @@ export function useChatSimulation() {
           body: JSON.stringify({})
         });
         const { tasks: newTasks } = await tasksResponse.json();
-        setTasks(newTasks);
-
+        
+        // 一个一个添加任务
         for (const task of newTasks) {
           const agent = getAgentById(task.assignedTo);
           await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
-          await executeAgentTask(task);
+          setTasks(prev => [...prev, task]);
+          await delay(500);
         }
 
         const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {

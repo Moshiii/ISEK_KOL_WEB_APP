@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+name = "ISEK"
+version = "0.1.0"
+description = "ISEK Distributed Multi-Agent Framework"
+authors = [{name = "ISEK Team", email = "your_email@isek.xyz"}]
+license = "MIT"
+readme = "README.md"
+
+[tool.hatch.dependencies]
+# List of dependencies (same as requirements.txt)
+loguru = "*"
+openai = "*"
+pyyaml = "*"
+requests = "*"
+flask = "*"
+ecdsa = "*"
+etcd3 = "*"
+protobuf = "3.20.3"
+grpcio = "1.42.0"
+grpcio-tools = "1.42.0"
+
+# Optional: If you want to specify extra dependencies for dev, testing, etc.
+[tool.hatch.extras]
+dev = ["pytest", "black", "flake8"]
+
+[tool.hatch.scripts]
+"isek" = "isek:main"

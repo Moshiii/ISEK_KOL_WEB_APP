@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .env
 server/__pycache__/main.cpython-312.pyc
+*.pyc
+__pycache__/

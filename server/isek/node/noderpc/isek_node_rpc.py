@@ -1,4 +1,4 @@
-from server.isek.node.noderpc import node_pb2, node_pb2_grpc
+from isek.node.noderpc import node_pb2, node_pb2_grpc
 
 
 class IsekNodeServiceServicer(node_pb2_grpc.IsekNodeServiceServicer):

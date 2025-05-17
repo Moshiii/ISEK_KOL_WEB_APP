@@ -1,5 +1,5 @@
 import threading
-from server.isek.agent.abstract_agent import AbstractAgent
+from isek.agent.abstract_agent import AbstractAgent
 
 
 class SingleAgent(AbstractAgent):

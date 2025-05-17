@@ -1,7 +1,7 @@
 import json
 import inspect
-from server.isek.agent.persona import Persona
-from server.isek.util.logger import logger
+from isek.agent.persona import Persona
+from isek.util.logger import logger
 from typing import List, Dict, Callable, Any, Optional, Union
 
 class ToolBox:

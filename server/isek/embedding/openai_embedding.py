@@ -5,9 +5,9 @@ from typing import Optional
 
 from openai import OpenAI
 
-from server.isek.embedding.abstract_embedding import AbstractEmbedding
-from server.isek.util.logger import logger
-from server.isek.util.tools import split_list
+from isek.embedding.abstract_embedding import AbstractEmbedding
+from isek.util.logger import logger
+from isek.util.tools import split_list
 
 
 class OpenAIEmbedding(AbstractEmbedding):

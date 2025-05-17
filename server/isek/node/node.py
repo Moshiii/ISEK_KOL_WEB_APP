@@ -9,13 +9,13 @@ import copy
 import grpc
 import numpy as np
 
-from server.isek.constant.exceptions import NodeUnavailableError
-from server.isek.node.noderpc import node_pb2, node_pb2_grpc
-from server.isek.node.registry import Registry
-from server.isek.util.logger import logger
-from server.isek.node.node_index import NodeIndex
-from server.isek.embedding.abstract_embedding import AbstractEmbedding
-from server.isek.node.isek_center_registry import IsekCenterRegistry
+from isek.constant.exceptions import NodeUnavailableError
+from isek.node.noderpc import node_pb2, node_pb2_grpc
+from isek.node.registry import Registry
+from isek.util.logger import logger
+from isek.node.node_index import NodeIndex
+from isek.embedding.abstract_embedding import AbstractEmbedding
+from isek.node.isek_center_registry import IsekCenterRegistry
 
 
 class Node(node_pb2_grpc.IsekNodeServiceServicer, ABC):

@@ -1,7 +1,7 @@
-from server.isek.agent.abstract_agent import AbstractAgent
-from server.isek.node.node import Node
-from server.isek.node.p2p_node import P2PNode
-from server.isek.util.logger import logger
+from isek.agent.abstract_agent import AbstractAgent
+from isek.node.node import Node
+from isek.node.p2p_node import P2PNode
+from isek.util.logger import logger
 import threading
 
 

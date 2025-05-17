@@ -3,8 +3,8 @@ from typing import Optional, Dict
 
 import requests
 
-from server.isek.util.logger import logger
-from server.isek.node.registry import Registry
+from isek.util.logger import logger
+from isek.node.registry import Registry
 
 
 class IsekCenterRegistry(Registry):

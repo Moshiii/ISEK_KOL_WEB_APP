@@ -1,8 +1,8 @@
 import faiss
 import numpy as np
-from server.isek.util.tools import dict_md5
-from server.isek.util.logger import logger
-from server.isek.embedding.abstract_embedding import AbstractEmbedding
+from isek.util.tools import dict_md5
+from isek.util.logger import logger
+from isek.embedding.abstract_embedding import AbstractEmbedding
 
 
 class NodeIndex(object):

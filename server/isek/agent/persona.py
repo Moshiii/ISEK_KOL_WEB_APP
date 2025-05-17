@@ -1,4 +1,4 @@
-from server.isek.util.logger import logger
+from isek.util.logger import logger
 import json
 
 

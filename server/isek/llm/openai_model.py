@@ -3,9 +3,9 @@
 import time
 import os
 import json
-from server.isek.util.logger import logger
-from server.isek.llm.abstract_model import AbstractModel
-from server.isek.util.tools import function_to_schema, load_json_from_chat_response
+from isek.util.logger import logger
+from isek.llm.abstract_model import AbstractModel
+from isek.util.tools import function_to_schema, load_json_from_chat_response
 from typing import Union, List, Optional, Dict, Callable
 from openai import OpenAI
 

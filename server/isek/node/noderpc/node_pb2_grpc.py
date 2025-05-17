@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import server.isek.node.noderpc.node_pb2 as node__pb2
+import isek.node.noderpc.node_pb2 as node__pb2
 
 
 class IsekNodeServiceStub(object):

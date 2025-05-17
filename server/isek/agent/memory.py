@@ -1,7 +1,7 @@
 import datetime
 import uuid
 from typing import Dict, List, Any, Optional, Callable, TypeVar, Union
-from server.isek.util.logger import logger
+from isek.util.logger import logger
 import json
 
 T = TypeVar('T')

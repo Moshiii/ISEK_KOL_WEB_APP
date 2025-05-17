@@ -10,13 +10,13 @@ import subprocess
 import grpc
 import numpy as np
 
-from server.isek.constant.exceptions import NodeUnavailableError
-from server.isek.node.noderpc import node_pb2, node_pb2_grpc
-from server.isek.node.registry import Registry
-from server.isek.util.logger import logger
-from server.isek.node.node_index import NodeIndex
-from server.isek.embedding.abstract_embedding import AbstractEmbedding
-from server.isek.node.isek_center_registry import IsekCenterRegistry
+from isek.constant.exceptions import NodeUnavailableError
+from isek.node.noderpc import node_pb2, node_pb2_grpc
+from isek.node.registry import Registry
+from isek.util.logger import logger
+from isek.node.node_index import NodeIndex
+from isek.embedding.abstract_embedding import AbstractEmbedding
+from isek.node.isek_center_registry import IsekCenterRegistry
 import os
 
 
@@ -84,8 +84,11 @@ class P2PNode(node_pb2_grpc.IsekP2PNodeServiceServicer, ABC):
         def stream_output(stream):
             for line in iter(stream.readline, ''):
                 logger.debug(line)
+        dirc = os.path.dirname(__file__)
+        parent = os.path.abspath(os.path.join(dirc, "..", ".."))
+        p2p_file_path = os.path.join(parent, "p2p-server", "p2p_server.js")
         process = subprocess.Popen(
-            ["node", "p2p-server/p2p_server.js", f"--port={self.p2p_server_port}", f"--agent_port={self.port}"],
+            ["node", p2p_file_path, f"--port={self.p2p_server_port}", f"--agent_port={self.port}"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

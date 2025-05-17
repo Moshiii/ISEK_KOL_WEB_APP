@@ -25,18 +25,15 @@ const TWITTER_HANDLES = [
 const AGENT_TASK_MESSAGES = {
   researcher: [
     "我已经开始进行市场研究，重点关注目标受众的行为特征和偏好。",
-    "正在分析竞品的社交媒体策略，寻找差异化机会。",
-    "市场调研完成！我发现了几个很有价值的营销切入点。"
+    "正在分析竞品的社交媒体策略，寻找差异化机会。"
   ],
   writer: [
     "我正在设计内容框架，确保每条推文都能引起共鸣。",
-    "正在撰写一系列吸引人的推文，融入关键信息点。",
-    "内容创作完成！我们有一个完整的推文发布计划了。"
+    "正在撰写一系列吸引人的推文，融入关键信息点。"
   ],
   designer: [
     "我在设计视觉主题，确保与品牌调性一致。",
-    "正在创作吸引眼球的配图和动画效果。",
-    "设计工作完成！所有视觉元素都准备就绪。"
+    "正在创作吸引眼球的配图和动画效果。"
   ]
 };
 
@@ -174,15 +171,29 @@ export function useChatSimulation() {
   const executeAgentTask = async (task: Task) => {
     const messages = AGENT_TASK_MESSAGES[task.assignedTo as keyof typeof AGENT_TASK_MESSAGES];
     
+    // Start task
     await updateTaskStatus(task.id, 'in-progress');
     await addAgentMessage(task.assignedTo, messages[0]);
     await delay(getRandomDelay());
     
+    // Progress update
     await addAgentMessage(task.assignedTo, messages[1]);
     await delay(getRandomDelay());
     
-    await updateTaskStatus(task.id, 'completed');
-    await addAgentMessage(task.assignedTo, messages[2]);
+    // Complete task - get completion message from backend
+    const response = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: 'completed'
+      })
+    });
+
+    const result = await response.json();
+    await updateTaskStatus(task.id, result.taskStatus);
+    await addAgentMessage(task.assignedTo, result.result);
   };
 
   const startCampaign = async (request: string) => {

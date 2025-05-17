@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package isek_node;
+
+message P2PContextRequest {
+
+}
+
+message P2PContextResponse {
+    string peer_id = 1;
+    string p2p_address = 2;
+}
+
+message CallRequest {
+    string sender_node_id = 1;
+    string receiver_node_id = 2;
+    string message = 3;
+}
+
+message CallResponse {
+    string reply = 1;
+}
+
+message CallPeerRequest {
+    string sender_node_id = 1;
+    string receiver_p2p_address = 2;
+    string message = 3;
+}
+
+message CallPeerResponse {
+    string reply = 1;
+}
+
+// 定义服务
+service IsekNodeService {
+    rpc call(CallRequest) returns (CallResponse);
+}
+
+service IsekP2PNodeService {
+    rpc call_peer(CallPeerRequest) returns (CallPeerResponse);
+    rpc p2p_context(P2PContextRequest) returns (P2PContextResponse);
+}
+
+// python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. node.proto

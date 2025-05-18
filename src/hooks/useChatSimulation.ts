@@ -171,9 +171,17 @@ export function useChatSimulation() {
   const executeAgentTask = async (task: Task) => {
     const messages = AGENT_TASK_MESSAGES[task.assignedTo as keyof typeof AGENT_TASK_MESSAGES];
     
-    // Start task and API call simultaneously
-    const statusPromise = updateTaskStatus(task.id, 'in-progress');
-    const apiPromise = fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
+    // Start task
+    await updateTaskStatus(task.id, 'in-progress');
+    await addAgentMessage(task.assignedTo, messages[0]);
+    await delay(getRandomDelay());
+    
+    // Progress update
+    await addAgentMessage(task.assignedTo, messages[1]);
+    await delay(getRandomDelay());
+    
+    // Complete task - get completion message from backend
+    const response = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -182,23 +190,6 @@ export function useChatSimulation() {
         status: 'completed'
       })
     });
-
-    // Show initial progress message
-    await Promise.all([
-      statusPromise,
-      addAgentMessage(task.assignedTo, messages[0])
-    ]);
-    
-    await delay(getRandomDelay());
-    
-    // Show second progress message while waiting for API
-    await addAgentMessage(task.assignedTo, messages[1]);
-    
-    // Wait for API response
-    const [response] = await Promise.all([
-      apiPromise,
-      delay(getRandomDelay()) // Ensure minimum delay
-    ]);
 
     const result = await response.json();
     await updateTaskStatus(task.id, result.taskStatus);

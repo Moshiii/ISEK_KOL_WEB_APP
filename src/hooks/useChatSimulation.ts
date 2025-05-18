@@ -3,16 +3,16 @@ import { Message, Task, Campaign, Agent, CampaignMetrics } from '../types';
 import { getAgentById } from '../data/agents';
 
 const PROGRESS_MESSAGES = [
-  "让我思考一下最佳的执行方案...",
-  "正在分析市场趋势和目标受众...",
-  "正在评估不同策略的可行性...",
-  "正在设计任务分配方案...",
-  "正在制定详细的执行计划...",
-  "正在考虑各种可能的营销角度...",
-  "正在规划时间线和里程碑...",
-  "正在评估资源分配方案...",
-  "正在思考如何最大化活动效果...",
-  "正在制定具体的实施步骤..."
+  "Let me think about the best execution plan...",
+  "Analyzing market trends and target audience...",
+  "Evaluating the feasibility of different strategies...",
+  "Designing the task allocation plan...",
+  "Developing a detailed execution plan...",
+  "Considering various possible marketing angles...",
+  "Planning the timeline and milestones...",
+  "Assessing resource allocation plan...",
+  "Thinking about how to maximize campaign effectiveness...",
+  "Formulating specific implementation steps..."
 ];
 
 const TWITTER_HANDLES = [
@@ -24,30 +24,30 @@ const TWITTER_HANDLES = [
 
 const AGENT_TASK_MESSAGES = {
   researcher: [
-    "我已经开始进行市场研究，重点关注目标受众的行为特征和偏好。",
-    "正在分析竞品的社交媒体策略，寻找差异化机会。"
+    "I've started conducting market research, focusing on the behavioral characteristics and preferences of the target audience.",
+    "Analyzing competitors' social media strategies to find differentiation opportunities."
   ],
   writer: [
-    "我正在设计内容框架，确保每条推文都能引起共鸣。",
-    "正在撰写一系列吸引人的推文，融入关键信息点。"
+    "I'm designing the content framework to ensure every tweet resonates.",
+    "Writing a series of engaging tweets, incorporating key information points."
   ],
   designer: [
-    "我在设计视觉主题，确保与品牌调性一致。",
-    "正在创作吸引眼球的配图和动画效果。"
+    "I'm designing the visual theme to ensure consistency with the brand tone.",
+    "Creating eye-catching graphics and animation effects."
   ]
 };
 
 const TWITTER_ACTION_MESSAGES = {
   post: (account: string, content: string) => 
-    `${account} 发布了推文：${content}`,
+    `${account} posted a tweet: ${content}`,
   like: (account: string, target: string) => 
-    `${account} 点赞了 ${target} 的推文`,
+    `${account} liked a tweet by ${target}`,
   reply: (account: string, target: string, content: string) => 
-    `${account} 回复了 ${target}：${content}`,
+    `${account} replied to ${target}: ${content}`,
   retweet: (account: string, target: string) => 
-    `${account} 转发了 ${target} 的推文`,
+    `${account} retweeted a tweet by ${target}`,
   follow: (account: string, target: string) => 
-    `${account} 关注了 ${target}`
+    `${account} followed ${target}`
 };
 
 const initialMetrics: CampaignMetrics = {
@@ -208,7 +208,7 @@ export function useChatSimulation() {
 
   const startCampaign = async (request: string) => {
     try {
-      // First add the user's message
+      // First, add the user's message
       await addMessage({
         id: generateId(),
         agentId: 'user',
@@ -241,11 +241,11 @@ export function useChatSimulation() {
 
       // Show the campaign plan
       await addAgentMessage('coordinator', result.campaign.messages[0].content);
-      await addAgentMessage('coordinator', '您觉得这个方案怎么样？如果同意，请回复"确认"开始执行。');
+      await addAgentMessage('coordinator', 'What do you think of this plan? If you agree, please reply with "confirm" to start execution.');
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
-      await addAgentMessage('coordinator', '抱歉，处理您的请求时出现了错误。请稍后重试。');
+      await addAgentMessage('coordinator', 'Sorry, there was an error processing your request. Please try again later.');
     }
   };
 
@@ -262,140 +262,140 @@ export function useChatSimulation() {
 
     try {
       if (!awaitingConfirmation) {
-        if (content.trim() !== '确认') {
-          await addAgentMessage('coordinator', '请回复"确认"以开始执行推广计划。');
-          return;
+      if (content.trim() !== 'confirm') {
+        await addAgentMessage('coordinator', 'Please reply with "confirm" to start executing the promotion plan.');
+        return;
+      }
+
+      // Start the team API call immediately
+      const teamPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+        campaignPlan: campaign.messages[0].content 
+        })
+      });
+
+      // Show progress while waiting
+      setTypingAgent(getAgentById('coordinator'));
+      await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
+
+      const teamResponse = await teamPromise;
+      const { team } = await teamResponse.json();
+      setTypingAgent(null);
+
+      // Introduce team members while starting tasks API call
+      const tasksPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+        campaignPlan: campaign.messages[0].content,
+        teamPlan: team
+        })
+      });
+
+      // Introduce each team member while waiting for tasks
+      if (Array.isArray(team)) {
+        for (const member of team) {
+        await addAgentMessage(member.id, member.introduction);
         }
+      }
 
-        // Start the team API call immediately
-        const teamPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            campaignPlan: campaign.messages[0].content 
-          })
-        });
+      const tasksResponse = await tasksPromise;
+      const { tasks: newTasks } = await tasksResponse.json();
+      
+      // Add and execute tasks
+      for (const task of newTasks) {
+        const agent = getAgentById(task.assignedTo);
+        await addAgentMessage('coordinator', `${agent.name} will be responsible for ${task.title}: ${task.description}`, 'task-assignment', task.id);
+        setTasks(prev => [...prev, task]);
+        await delay(500);
+        await executeAgentTask(task);
+      }
 
-        // Show progress while waiting
-        setTypingAgent(getAgentById('coordinator'));
-        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
+      // Start sequence API call while showing progress
+      const sequencePromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
 
-        const teamResponse = await teamPromise;
-        const { team } = await teamResponse.json();
-        setTypingAgent(null);
+      await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
 
-        // Introduce team members while starting tasks API call
-        const tasksPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            campaignPlan: campaign.messages[0].content,
-            teamPlan: team
-          })
-        });
+      const sequenceResponse = await sequencePromise;
+      const { sequence } = await sequenceResponse.json();
+      setTwitterSequence(sequence);
 
-        // Introduce each team member while waiting for tasks
-        if (Array.isArray(team)) {
-          for (const member of team) {
-            await addAgentMessage(member.id, member.introduction);
-          }
-        }
-
-        const tasksResponse = await tasksPromise;
-        const { tasks: newTasks } = await tasksResponse.json();
-        
-        // Add and execute tasks
-        for (const task of newTasks) {
-          const agent = getAgentById(task.assignedTo);
-          await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
-          setTasks(prev => [...prev, task]);
-          await delay(500);
-          await executeAgentTask(task);
-        }
-
-        // Start sequence API call while showing progress
-        const sequencePromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        });
-
-        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-
-        const sequenceResponse = await sequencePromise;
-        const { sequence } = await sequenceResponse.json();
-        setTwitterSequence(sequence);
-
-        await addAgentMessage('coordinator', '我们已经制定了详细的推广计划在右侧的任务栏中');
-        await addAgentMessage('coordinator', '如果同意推广计划,请再次回复"确认"开始执行。');
-        setAwaitingConfirmation(true);
+      await addAgentMessage('coordinator', 'We have created a detailed promotion plan, which you can view in the task panel on the right.');
+      await addAgentMessage('coordinator', 'If you agree with the promotion plan, please reply "confirm" again to start execution.');
+      setAwaitingConfirmation(true);
       } else {
-        if (content.trim() !== '确认') {
-          await addAgentMessage('coordinator', '如果您同意这个推广计划，请回复"确认"开始执行。');
-          return;
-        }
-        if (metricsInterval) {
-          clearInterval(metricsInterval);
+      if (content.trim() !== 'confirm') {
+        await addAgentMessage('coordinator', 'If you agree with this promotion plan, please reply "confirm" to start execution.');
+        return;
+      }
+      if (metricsInterval) {
+        clearInterval(metricsInterval);
+      }
+
+      const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      if (confirmResponse.ok) {
+        await addAgentMessage('coordinator', 'Great! We are now starting to execute the promotion plan.');
+        setStatus('in-progress');
+        setMetricsUpdateCount(0);
+
+        // Execute promotion sequence and update metrics
+        for (const action of twitterSequence) {
+        const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
+          action.account,
+          action.target_account || action.account,
+          action.content || ''
+        );
+        await addAgentMessage('coordinator', message);
+        updateMetricsForAction(action);
+        await delay(500);
         }
 
-        const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+        // Continue random growth for a while
+        const interval = setInterval(() => {
+        setMetricsUpdateCount(prev => prev + 1);
+        setMetrics(prev => {
+          const newAccounts = prev.twitterAccounts.map(account => ({
+          ...account,
+          likesCount: account.likesCount + Math.floor(Math.random() * 2),
+          retweetsCount: account.retweetsCount + Math.floor(Math.random() * 1)
+          }));
+
+          const totals = newAccounts.reduce((acc, account) => ({
+          totalPosts: acc.totalPosts + account.postsCount,
+          totalLikes: acc.totalLikes + account.likesCount,
+          totalReplies: acc.totalReplies + account.repliesCount,
+          totalRetweets: acc.totalRetweets + account.retweetsCount
+          }), {
+          totalPosts: 0,
+          totalLikes: 0,
+          totalReplies: 0,
+          totalRetweets: 0
+          });
+
+          return {
+          ...totals,
+          twitterAccounts: newAccounts
+          };
         });
-
-        if (confirmResponse.ok) {
-          await addAgentMessage('coordinator', '太好了！我们现在开始执行推广计划。');
-          setStatus('in-progress');
-          setMetricsUpdateCount(0);
-
-          // Execute promotion sequence and update metrics
-          for (const action of twitterSequence) {
-            const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
-              action.account,
-              action.target_account || action.account,
-              action.content || ''
-            );
-            await addAgentMessage('coordinator', message);
-            updateMetricsForAction(action);
-            await delay(500);
-          }
-
-          // Continue random growth for a while
-          const interval = setInterval(() => {
-            setMetricsUpdateCount(prev => prev + 1);
-            setMetrics(prev => {
-              const newAccounts = prev.twitterAccounts.map(account => ({
-                ...account,
-                likesCount: account.likesCount + Math.floor(Math.random() * 2),
-                retweetsCount: account.retweetsCount + Math.floor(Math.random() * 1)
-              }));
-
-              const totals = newAccounts.reduce((acc, account) => ({
-                totalPosts: acc.totalPosts + account.postsCount,
-                totalLikes: acc.totalLikes + account.likesCount,
-                totalReplies: acc.totalReplies + account.repliesCount,
-                totalRetweets: acc.totalRetweets + account.retweetsCount
-              }), {
-                totalPosts: 0,
-                totalLikes: 0,
-                totalReplies: 0,
-                totalRetweets: 0
-              });
-
-              return {
-                ...totals,
-                twitterAccounts: newAccounts
-              };
-            });
-          }, 500);
-          setMetricsInterval(interval);
-        }
+        }, 500);
+        setMetricsInterval(interval);
+      }
       }
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
-      await addAgentMessage('coordinator', '抱歉，处理您的请求时出现了错误。请稍后重试。');
+      await addAgentMessage('coordinator', 'Sorry, there was an error processing your request. Please try again later.');
     }
   };
 

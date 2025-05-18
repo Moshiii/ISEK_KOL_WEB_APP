@@ -49,66 +49,65 @@ campaigns = {}
 
 # Dummy data and templates
 THINKING_MESSAGES = [
-    "让我思考一下最佳的执行方案...",
-    "正在分析市场趋势和目标受众...",
-    "正在评估不同策略的可行性...",
-    "正在设计任务分配方案...",
-    "正在制定详细的执行计划...",
-    "正在考虑各种可能的营销角度...",
-    "正在规划时间线和里程碑...",
-    "正在评估资源分配方案...",
-    "正在思考如何最大化活动效果...",
-    "正在制定具体的实施步骤..."
+    "Let me think about the best execution plan...",
+    "Analyzing market trends and target audience...",
+    "Evaluating the feasibility of different strategies...",
+    "Designing the task allocation scheme...",
+    "Developing a detailed execution plan...",
+    "Considering various possible marketing angles...",
+    "Planning the timeline and milestones...",
+    "Assessing resource allocation options...",
+    "Thinking about how to maximize campaign effectiveness...",
+    "Formulating specific implementation steps..."
 ]
 
-DUMMY_CAMPAIGN_PLAN = """基于您的需求，我为您制定了以下推广方案：
+DUMMY_CAMPAIGN_PLAN = """Based on your requirements, I have developed the following marketing plan:
 
-1. 目标受众：
-   - 25-35岁的年轻专业人士
-   - 对科技和创新感兴趣
-   - 活跃在社交媒体平台
+1. Target Audience:
+    - Young professionals aged 25-35
+    - Interested in technology and innovation
+    - Active on social media platforms
 
-2. 活动目标：
-   - 提升品牌知名度
-   - 增加社交媒体互动
-   - 扩大目标用户群
+2. Campaign Goals:
+    - Increase brand awareness
+    - Boost social media engagement
+    - Expand the target user base
 
-3. 执行策略：
-   - 创建引人入胜的内容
-   - 与行业KOL合作
-   - 开展互动活动
+3. Execution Strategies:
+    - Create engaging content
+    - Collaborate with industry KOLs
+    - Launch interactive activities
 
-您觉得这个方案怎么样？如果需要调整，请告诉我具体想法。"""
+What do you think of this plan? If you need any adjustments, please let me know your specific ideas."""
 
 DUMMY_TEAM = [
     {
         "id": "researcher",
         "name": "Riley",
         "role": "researcher",
-        "skills": ["数据分析", "市场研究", "竞品分析"],
-        "introduction": "作为研究分析师，我将负责深入分析目标受众、市场趋势和竞争对手。"
+        "skills": ["Data Analysis", "Market Research", "Competitor Analysis"],
+        "introduction": "As a research analyst, I will be responsible for in-depth analysis of the target audience, market trends, and competitors."
     },
     {
         "id": "writer",
         "name": "Jordan",
         "role": "writer",
-        "skills": ["内容创作", "文案策划", "社媒运营"],
-        "introduction": "我是团队的内容创作者，将确保每条推文都能吸引目标受众。"
+        "skills": ["Content Creation", "Copywriting", "Social Media Operations"],
+        "introduction": "I am the team's content creator and will ensure every post attracts the target audience."
     },
     {
         "id": "designer",
         "name": "Taylor",
         "role": "designer",
-        "skills": ["视觉设计", "品牌设计", "UI设计"],
-        "introduction": "作为设计师，我将为活动创作视觉内容，提升品牌形象。"
+        "skills": ["Visual Design", "Brand Design", "UI Design"],
+        "introduction": "As the designer, I will create visual content for the campaign to enhance the brand image."
     }
 ]
-
 DUMMY_TASKS = [
     {
         "id": "task1",
-        "title": "市场研究",
-        "description": "分析目标受众和竞品情况",
+        "title": "Market Research",
+        "description": "Analyze target audience and competitors",
         "assignedTo": "researcher",
         "status": "pending",
         "createdAt": datetime.now().isoformat(),
@@ -116,8 +115,8 @@ DUMMY_TASKS = [
     },
     {
         "id": "task2",
-        "title": "内容策划",
-        "description": "制定内容发布计划",
+        "title": "Content Planning",
+        "description": "Develop content publishing plan",
         "assignedTo": "writer",
         "status": "pending",
         "createdAt": datetime.now().isoformat(),
@@ -125,8 +124,8 @@ DUMMY_TASKS = [
     },
     {
         "id": "task3",
-        "title": "视觉设计",
-        "description": "设计活动主视觉",
+        "title": "Visual Design",
+        "description": "Design main visual for the campaign",
         "assignedTo": "designer",
         "status": "pending",
         "createdAt": datetime.now().isoformat(),
@@ -136,16 +135,16 @@ DUMMY_TASKS = [
 
 TASK_RESULTS = {
     "researcher": {
-        "in_progress": "正在进行市场调研，分析目标受众特征...",
-        "completed": "市场调研完成！我发现了几个很有价值的营销切入点：\n1. 目标用户主要活跃在早晚高峰时段\n2. 对互动性内容反应最积极\n3. 技术话题最受欢迎"
+        "in_progress": "Conducting market research and analyzing target audience characteristics...",
+        "completed": "Market research completed! I found several valuable marketing insights:\n1. Target users are mainly active during morning and evening peak hours\n2. They respond most positively to interactive content\n3. Technology topics are the most popular"
     },
     "writer": {
-        "in_progress": "正在设计内容框架，编写推文...",
-        "completed": "内容创作完成！我们准备了一系列引人入胜的推文，包括：\n1. 产品功能展示\n2. 用户案例分享\n3. 行业趋势分析"
+        "in_progress": "Designing content framework and drafting tweets...",
+        "completed": "Content creation completed! We have prepared a series of engaging tweets, including:\n1. Product feature showcases\n2. User case studies\n3. Industry trend analysis"
     },
     "designer": {
-        "in_progress": "正在设计视觉元素，确保品牌一致性...",
-        "completed": "设计工作完成！创作了一套完整的视觉资产：\n1. 品牌主视觉\n2. 社交媒体模板\n3. 互动内容图形"
+        "in_progress": "Designing visual elements to ensure brand consistency...",
+        "completed": "Design work completed! Created a complete set of visual assets:\n1. Main brand visuals\n2. Social media templates\n3. Interactive content graphics"
     }
 }
 
@@ -157,10 +156,10 @@ TWITTER_ACCOUNTS = [
 ]
 
 DUMMY_POSTS = [
-    "这个产品真的很棒！推荐大家试试 #创新",
-    "使用体验超出预期，分享给大家 #推荐",
-    "这款应用解决了我的很多问题 #好物推荐",
-    "不得不说，这个真的很实用 #分享"
+    "This product is really great! Highly recommend everyone to try it. #Innovation",
+    "The user experience exceeded my expectations, sharing with everyone. #Recommended",
+    "This app solved many of my problems. #ProductRecommendation",
+    "I have to say, this is really practical. #Sharing"
 ]
 
 def generate_twitter_sequence():

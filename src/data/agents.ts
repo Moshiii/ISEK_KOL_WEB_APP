@@ -4,7 +4,7 @@ import { CircleUserRound, UserCog, PenTool, Sparkles, User } from 'lucide-react'
 export const agents: Agent[] = [
   {
     id: 'user',
-    name: '用户',
+    name: 'User',
     role: 'user',
     avatar: 'user',
     color: '#F43F5E', // Rose

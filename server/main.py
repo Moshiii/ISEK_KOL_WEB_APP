@@ -199,6 +199,11 @@ def generate_team(campaign_plan: str) -> List[Dict]:
     # TODO: later replace by openai API call
     time.sleep(3)
     return DUMMY_TEAM
+def generate_tasks(campaign_plan: str, team_plan: List[Dict]) -> List[Dict]:
+    
+    # TODO: later replace by openai API call
+    time.sleep(3)
+    return DUMMY_TASKS
 
 @app.post("/api/campaign")
 async def create_campaign(campaign: CampaignRequest):
@@ -237,7 +242,7 @@ async def get_team(campaign_id: str, request: TeamRequest):
     
     # Store the campaign plan for later use
     campaigns[campaign_id]["campaign_plan"] = request.campaignPlan
-    
+    return generate_team(request.campaignPlan)
     return {"team": DUMMY_TEAM}
 
 @app.post("/api/campaign/{campaign_id}/tasks")
@@ -245,8 +250,7 @@ async def get_tasks(campaign_id: str, request: TaskRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    # Here you can use request.campaignPlan and request.teamPlan to customize tasks
-    # For now, we'll just return the dummy tasks
+    return generate_tasks(request.campaignPlan, request.teamPlan)
     return {"tasks": DUMMY_TASKS}
 
 @app.post("/api/campaign/{campaign_id}/task/{task_id}/execute")

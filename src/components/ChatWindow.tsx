@@ -40,9 +40,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div className="h-full flex flex-col bg-gray-800">
       <div className="p-4 border-b border-gray-700 flex-shrink-0">
-        <h2 className="text-xl font-semibold mb-1 bg-gradient-to-r from-[#5370FF] to-[#FF66C5] text-transparent bg-clip-text">推特活动协作</h2>
+        <h2 className="text-xl font-semibold mb-1 bg-gradient-to-r from-[#5370FF] to-[#FF66C5] text-transparent bg-clip-text">Twitter Campaign Collaboration</h2>
         <p className="text-gray-300 text-sm">
-          观看我们的AI助手协作执行您的推特活动策略。
+          Watch our AI assistants collaborate to execute your Twitter campaign strategy.
         </p>
       </div>
       
@@ -51,8 +51,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
             {messages.length === 0 && !typingAgent ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                <p className="text-center mb-2">暂无消息</p>
-                <p className="text-center text-sm">提交活动请求开始对话</p>
+                <p className="text-center mb-2">No messages yet</p>
+                <p className="text-center text-sm">Submit a campaign request to start the conversation</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -69,13 +69,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="w-full md:w-64 lg:w-80 border-t md:border-t-0 md:border-l border-gray-700 overflow-hidden flex flex-col min-h-0 bg-gray-800">
           <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
             <div className="mb-6">
-              <h3 className="font-medium mb-3 text-gray-200">任务</h3>
+              <h3 className="font-medium mb-3 text-gray-200">Tasks</h3>
               <TaskList tasks={tasks} />
             </div>
             
             {twitterSequence.length > 0 && (
               <div>
-                <h3 className="font-medium mb-3 text-gray-200">推广计划</h3>
+                <h3 className="font-medium mb-3 text-gray-200">Promotion Plan</h3>
                 <TwitterSequence sequence={twitterSequence} />
               </div>
             )}

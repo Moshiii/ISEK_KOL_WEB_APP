@@ -28,7 +28,7 @@ function App() {
   return (
     <div className="h-screen bg-gray-900 flex flex-col overflow-hidden text-gray-100">
       <header className="gradient-primary px-6 py-4 flex items-center">
-        <h1 className="text-xl font-bold text-white">推特活动中心</h1>
+        <h1 className="text-xl font-bold text-white">Twitter Campaign Center</h1>
       </header>
       
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -36,7 +36,7 @@ function App() {
           <UserInput 
             onSubmit={messages.length === 0 ? handleSubmitRequest : handleSendMessage}
             isProcessing={isProcessing}
-            placeholder={messages.length === 0 ? "请描述您的推特活动..." : "请确认开始执行推广计划..."}
+            placeholder={messages.length === 0 ? "Please describe your Twitter campaign..." : "Please confirm to start executing the promotion plan..."}
           />
         </div>
         

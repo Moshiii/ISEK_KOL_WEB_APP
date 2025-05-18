@@ -7,7 +7,7 @@ interface UserInputProps {
   placeholder?: string;
 }
 
-const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing, placeholder = "请描述您的推特活动..." }) => {
+const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing, placeholder = "Please describe your Twitter campaign..." }) => {
   const [request, setRequest] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -21,9 +21,9 @@ const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing, placehold
   return (
     <div className="h-full flex flex-col bg-gray-800">
       <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-semibold mb-1 bg-gradient-to-r from-[#5370FF] to-[#FF66C5] text-transparent bg-clip-text">活动请求</h2>
+        <h2 className="text-lg font-semibold mb-1 bg-gradient-to-r from-[#5370FF] to-[#FF66C5] text-transparent bg-clip-text">Campaign Request</h2>
         <p className="text-gray-400 text-sm">
-          描述您的推特活动，我们的AI助手将为您规划和执行。
+          Describe your Twitter campaign, and our AI assistants will plan and execute it for you.
         </p>
       </div>
       
@@ -46,7 +46,7 @@ const UserInput: React.FC<UserInputProps> = ({ onSubmit, isProcessing, placehold
                 : 'gradient-primary text-white hover:opacity-90'
             }`}
           >
-            {isProcessing ? '处理中...' : '发送'}
+            {isProcessing ? 'Processing...' : 'Send'}
             <Send size={18} />
           </button>
         </form>

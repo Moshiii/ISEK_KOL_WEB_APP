@@ -34,20 +34,20 @@ const TwitterSequence: React.FC<TwitterSequenceProps> = ({ sequence }) => {
   const getActionText = (action: TwitterAction) => {
     switch (action.action_type) {
       case 'post':
-        return `@${action.account} 发布了推文${action.content ? `：${action.content}` : ''}`;
+        return `@${action.account} posted${action.content ? `: ${action.content}` : ''}`;
       case 'like':
-        return `@${action.account} 点赞了 @${action.target_account} 的推文`;
+        return `@${action.account} liked @${action.target_account}'s tweet`;
       case 'reply':
-        return `@${action.account} 回复了 @${action.target_account}${action.content ? `：${action.content}` : ''}`;
+        return `@${action.account} replied to @${action.target_account}${action.content ? `: ${action.content}` : ''}`;
       case 'retweet':
-        return `@${action.account} 转发了 @${action.target_account} 的推文`;
+        return `@${action.account} retweeted @${action.target_account}'s tweet`;
       case 'follow':
-        return `@${action.account} 关注了 @${action.target_account}`;
+        return `@${action.account} followed @${action.target_account}`;
     }
   };
 
   if (!sequence.length) {
-    return <div className="text-gray-400 text-sm italic">暂无推广计划</div>;
+    return <div className="text-gray-400 text-sm italic">No promotion plan yet</div>;
   }
 
   const actionCounts = sequence.reduce((acc, action) => {
@@ -61,26 +61,26 @@ const TwitterSequence: React.FC<TwitterSequenceProps> = ({ sequence }) => {
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="font-medium text-gray-200">推广计划概览</h3>
+        <h3 className="font-medium text-gray-200">Promotion Plan Overview</h3>
         {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
       </div>
 
       <div className="grid grid-cols-2 gap-3 mt-4">
         <div className="flex items-center gap-2">
           <Send size={16} className="text-[#5370FF]" />
-          <span className="text-sm text-gray-300">发文 {actionCounts.post || 0}</span>
+          <span className="text-sm text-gray-300">Posts {actionCounts.post || 0}</span>
         </div>
         <div className="flex items-center gap-2">
           <Heart size={16} className="text-[#FF66C5]" />
-          <span className="text-sm text-gray-300">点赞 {actionCounts.like || 0}</span>
+          <span className="text-sm text-gray-300">Likes {actionCounts.like || 0}</span>
         </div>
         <div className="flex items-center gap-2">
           <MessageSquare size={16} className="text-[#5370FF]" />
-          <span className="text-sm text-gray-300">回复 {actionCounts.reply || 0}</span>
+          <span className="text-sm text-gray-300">Replies {actionCounts.reply || 0}</span>
         </div>
         <div className="flex items-center gap-2">
           <Repeat2 size={16} className="text-[#FF66C5]" />
-          <span className="text-sm text-gray-300">转发 {actionCounts.retweet || 0}</span>
+          <span className="text-sm text-gray-300">Retweets {actionCounts.retweet || 0}</span>
         </div>
       </div>
 

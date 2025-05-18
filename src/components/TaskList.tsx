@@ -12,7 +12,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
   const [expandedTasks, setExpandedTasks] = React.useState<string[]>([]);
 
   if (tasks.length === 0) {
-    return <div className="text-gray-400 text-sm italic">暂无任务</div>;
+    return <div className="text-gray-400 text-sm italic">No tasks yet</div>;
   }
 
   const getStatusIcon = (status: Task['status'] | SubTask['status']) => {
@@ -29,11 +29,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
   const getStatusText = (status: Task['status'] | SubTask['status']) => {
     switch (status) {
       case 'pending':
-        return '待处理';
+        return 'Pending';
       case 'in-progress':
-        return '进行中';
+        return 'In Progress';
       case 'completed':
-        return '已完成';
+        return 'Completed';
     }
   };
 

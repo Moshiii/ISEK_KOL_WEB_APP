@@ -247,7 +247,9 @@ export function useChatSimulation() {
         const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+          body: JSON.stringify({ 
+            campaignPlan: campaign.messages[0].content 
+          })
         });
         const { team } = await teamResponse.json();
 

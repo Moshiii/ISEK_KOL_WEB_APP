@@ -181,7 +181,7 @@ export function useChatSimulation() {
     await delay(getRandomDelay());
     
     // Complete task - get completion message from backend
-    const response = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
+    const apiPromise = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -191,6 +191,16 @@ export function useChatSimulation() {
       })
     });
 
+    // While waiting for the API, show progress messages
+    setTypingAgent(getAgentById(task.assignedTo));
+    for (let i = 0; i < 3; i++) {
+      await addAgentMessage(
+        task.assignedTo, 
+        PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
+      );
+    }
+
+    const response = await apiPromise;
     const result = await response.json();
     await updateTaskStatus(task.id, result.taskStatus);
     await addAgentMessage(task.assignedTo, result.result);

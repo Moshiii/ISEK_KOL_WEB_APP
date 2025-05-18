@@ -198,6 +198,7 @@ export function useChatSimulation() {
 
   const startCampaign = async (request: string) => {
     try {
+      // First add the user's message
       await addMessage({
         id: generateId(),
         agentId: 'user',
@@ -206,23 +207,35 @@ export function useChatSimulation() {
         type: 'message'
       });
 
-      await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-      setTypingAgent(getAgentById('coordinator'));
-      const response = await fetch('http://localhost:8000/api/campaign', {
+      // Start the API call immediately
+      const apiPromise = fetch('http://localhost:8000/api/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request })
       });
+
+      // While waiting for the API, show progress messages
+      setTypingAgent(getAgentById('coordinator'));
+      for (let i = 0; i < 3; i++) {
+        await addAgentMessage(
+          'coordinator', 
+          PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
+        );
+      }
+
+      // Now await the API response
+      const response = await apiPromise;
       const result = await response.json();
       setCampaign(result.campaign);
       setTypingAgent(null);
 
+      // Show the campaign plan
       await addAgentMessage('coordinator', result.campaign.messages[0].content);
-
       await addAgentMessage('coordinator', '您觉得这个方案怎么样？如果同意，请回复"确认"开始执行。');
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
+      await addAgentMessage('coordinator', '抱歉，处理您的请求时出现了错误。请稍后重试。');
     }
   };
 
@@ -243,27 +256,26 @@ export function useChatSimulation() {
           await addAgentMessage('coordinator', '请回复"确认"以开始执行推广计划。');
           return;
         }
-        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
 
-        setTypingAgent(getAgentById('coordinator'));
-        const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
+        // Start the team API call immediately
+        const teamPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             campaignPlan: campaign.messages[0].content 
           })
         });
+
+        // Show progress while waiting
+        setTypingAgent(getAgentById('coordinator'));
+        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
+
+        const teamResponse = await teamPromise;
         const { team } = await teamResponse.json();
         setTypingAgent(null);
 
-        // Introduce each team member
-        for (const member of team) {
-          await addAgentMessage(member.id, member.introduction);
-        }
-
-        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-        
-        const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
+        // Introduce team members while starting tasks API call
+        const tasksPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -271,9 +283,18 @@ export function useChatSimulation() {
             teamPlan: team
           })
         });
+
+        // Introduce each team member while waiting for tasks
+        if (Array.isArray(team)) {
+          for (const member of team) {
+            await addAgentMessage(member.id, member.introduction);
+          }
+        }
+
+        const tasksResponse = await tasksPromise;
         const { tasks: newTasks } = await tasksResponse.json();
         
-        // 一个一个添加任务并执行
+        // Add and execute tasks
         for (const task of newTasks) {
           const agent = getAgentById(task.assignedTo);
           await addAgentMessage('coordinator', `${agent.name} 将负责 ${task.title}：${task.description}`, 'task-assignment', task.id);
@@ -282,13 +303,16 @@ export function useChatSimulation() {
           await executeAgentTask(task);
         }
 
-        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-
-        const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
+        // Start sequence API call while showing progress
+        const sequencePromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         });
+
+        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
+
+        const sequenceResponse = await sequencePromise;
         const { sequence } = await sequenceResponse.json();
         setTwitterSequence(sequence);
 
@@ -315,7 +339,7 @@ export function useChatSimulation() {
           setStatus('in-progress');
           setMetricsUpdateCount(0);
 
-          // 同步执行推送流程和更新指标
+          // Execute promotion sequence and update metrics
           for (const action of twitterSequence) {
             const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
               action.account,
@@ -327,7 +351,7 @@ export function useChatSimulation() {
             await delay(500);
           }
 
-          // 继续随机增长一段时间
+          // Continue random growth for a while
           const interval = setInterval(() => {
             setMetricsUpdateCount(prev => prev + 1);
             setMetrics(prev => {
@@ -361,6 +385,7 @@ export function useChatSimulation() {
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
+      await addAgentMessage('coordinator', '抱歉，处理您的请求时出现了错误。请稍后重试。');
     }
   };
 

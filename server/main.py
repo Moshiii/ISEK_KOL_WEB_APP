@@ -1,3 +1,4 @@
+```python
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -32,6 +33,10 @@ class TaskExecutionRequest(BaseModel):
 
 class TeamRequest(BaseModel):
     campaignPlan: str
+
+class TaskRequest(BaseModel):
+    campaignPlan: str
+    teamPlan: List[Dict]
 
 class TwitterAction(BaseModel):
     account: str
@@ -231,14 +236,18 @@ async def get_team(campaign_id: str, request: TeamRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    # return {"team": DUMMY_TEAM}
-    return {"team": generate_team(request.campaignPlan)}
+    # Store the campaign plan for later use
+    campaigns[campaign_id]["campaign_plan"] = request.campaignPlan
+    
+    return {"team": DUMMY_TEAM}
 
 @app.post("/api/campaign/{campaign_id}/tasks")
-async def get_tasks(campaign_id: str):
+async def get_tasks(campaign_id: str, request: TaskRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
+    # Here you can use request.campaignPlan and request.teamPlan to customize tasks
+    # For now, we'll just return the dummy tasks
     return {"tasks": DUMMY_TASKS}
 
 @app.post("/api/campaign/{campaign_id}/task/{task_id}/execute")
@@ -289,3 +298,4 @@ async def confirm_campaign(campaign_id: str):
         "status": "success",
         "message": "Campaign confirmed and started"
     }
+```

@@ -34,11 +34,11 @@ Mani_agent.tool_manager.register_tools([
     Mani_agent.decompose_task,
 ])
 Mani_agent.build(daemon=True)
-time.sleep(5)
+time.sleep(10)
 
 message = {
     "name": Mani_agent.persona.name,
     "query": "hello",
     "peerid": Mani_agent.peer_id
 }
-Mani_agent.send_p2p_message("/ip4/45.32.115.124/tcp/9090/ws/p2p/12D3KooWEm7y24CfhEUAvNcQH1osnwhHt3ibGYZdKdLpezQt1r4Y/p2p-circuit/p2p/12D3KooWFMCoVcaJUCyPN2o9c1C6ndEQeXoebFg15EcLXrxp2vw4", json.dumps(message, ensure_ascii=False))
+Mani_agent.send_p2p_message("/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWHQr3TCNoDYF5UXB2CsQTFKHrYvu28cuN1jAb9FCvBQoY", json.dumps(message, ensure_ascii=False))

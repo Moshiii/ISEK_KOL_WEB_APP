@@ -207,15 +207,15 @@ export function useChatSimulation() {
       });
 
       await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-
+      setTypingAgent(getAgentById('coordinator'));
       const response = await fetch('http://localhost:8000/api/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request })
       });
-      
       const result = await response.json();
       setCampaign(result.campaign);
+      setTypingAgent(null);
 
       await addAgentMessage('coordinator', result.campaign.messages[0].content);
 
@@ -243,7 +243,9 @@ export function useChatSimulation() {
           await addAgentMessage('coordinator', '请回复"确认"以开始执行推广计划。');
           return;
         }
+        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
 
+        setTypingAgent(getAgentById('coordinator'));
         const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -252,12 +254,15 @@ export function useChatSimulation() {
           })
         });
         const { team } = await teamResponse.json();
+        setTypingAgent(null);
 
         // Introduce each team member
         for (const member of team) {
           await addAgentMessage(member.id, member.introduction);
         }
 
+        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
+        
         const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -277,6 +282,8 @@ export function useChatSimulation() {
           await executeAgentTask(task);
         }
 
+        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
+
         const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -286,7 +293,7 @@ export function useChatSimulation() {
         setTwitterSequence(sequence);
 
         await addAgentMessage('coordinator', '我们已经制定了详细的推广计划在右侧的任务栏中');
-        await addAgentMessage('coordinator', '这是我们的推广计划，如果同意请再次回复"确认"开始执行。');
+        await addAgentMessage('coordinator', '如果同意推广计划,请再次回复"确认"开始执行。');
         setAwaitingConfirmation(true);
       } else {
         if (content.trim() !== '确认') {

@@ -192,7 +192,7 @@ def generate_id() -> str:
 def generate_campaign_plan(request: str) -> str:
     # Simulate a thinking process
     # TODO: later replace by openai API call
-    time.sleep(1)
+    time.sleep(3)
     return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
 def generate_team(campaign_plan: str) -> List[Dict]:
     

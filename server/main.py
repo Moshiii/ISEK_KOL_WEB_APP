@@ -27,8 +27,10 @@ class UserMessageRequest(BaseModel):
     content: str
 
 class TaskExecutionRequest(BaseModel):
-    taskId: str
     status: str
+
+class TeamRequest(BaseModel):
+    campaignPlan: str
 
 class TwitterAction(BaseModel):
     account: str
@@ -130,15 +132,15 @@ DUMMY_TASKS = [
 TASK_RESULTS = {
     "researcher": {
         "in_progress": "正在进行市场调研，分析目标受众特征...",
-        "completed": "市场调研完成！发现了几个很有价值的营销切入点。"
+        "completed": "市场调研完成！我发现了几个很有价值的营销切入点：\n1. 目标用户主要活跃在早晚高峰时段\n2. 对互动性内容反应最积极\n3. 技术话题最受欢迎"
     },
     "writer": {
         "in_progress": "正在设计内容框架，编写推文...",
-        "completed": "内容创作完成！我们有一个完整的推文发布计划了。"
+        "completed": "内容创作完成！我们准备了一系列引人入胜的推文，包括：\n1. 产品功能展示\n2. 用户案例分享\n3. 行业趋势分析"
     },
     "designer": {
         "in_progress": "正在设计视觉元素，确保品牌一致性...",
-        "completed": "设计工作完成！所有视觉元素都准备就绪。"
+        "completed": "设计工作完成！创作了一套完整的视觉资产：\n1. 品牌主视觉\n2. 社交媒体模板\n3. 互动内容图形"
     }
 }
 
@@ -211,10 +213,12 @@ async def create_campaign(campaign: CampaignRequest):
     }
 
 @app.post("/api/campaign/{campaign_id}/team")
-async def get_team(campaign_id: str):
+async def get_team(campaign_id: str, request: TeamRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
+    # Here you can use request.campaignPlan to customize the team based on the plan
+    # For now, we'll just return the dummy team
     return {"team": DUMMY_TEAM}
 
 @app.post("/api/campaign/{campaign_id}/tasks")

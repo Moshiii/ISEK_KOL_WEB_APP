@@ -7,6 +7,7 @@ import json
 import asyncio
 import uuid
 import random
+import time
 
 app = FastAPI()
 
@@ -164,6 +165,7 @@ def generate_twitter_sequence():
     random.shuffle(accounts)
     
     for i in range(10):
+        
         action = random.choice(['post', 'like', 'reply', 'retweet', 'follow'])
         account = accounts[i % len(accounts)]
         target = random.choice([acc for acc in accounts if acc != account])
@@ -182,6 +184,17 @@ def generate_twitter_sequence():
 
 def generate_id() -> str:
     return str(uuid.uuid4())
+
+def generate_campaign_plan(request: str) -> str:
+    # Simulate a thinking process
+    # TODO: later replace by openai API call
+    time.sleep(3)
+    return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
+def generate_team(campaign_plan: str) -> List[Dict]:
+    
+    # TODO: later replace by openai API call
+    time.sleep(3)
+    return DUMMY_TEAM
 
 @app.post("/api/campaign")
 async def create_campaign(campaign: CampaignRequest):
@@ -202,11 +215,12 @@ async def create_campaign(campaign: CampaignRequest):
     campaigns[campaign_id]["messages"].append({
         "id": generate_id(),
         "agentId": "coordinator",
-        "content": DUMMY_CAMPAIGN_PLAN,
+        "content": generate_campaign_plan(campaign.request),
+        # "content": DUMMY_CAMPAIGN_PLAN,
         "timestamp": datetime.now().isoformat(),
         "type": "message"
     })
-    
+    time.sleep(3)
     return {
         "status": "success",
         "campaign": campaigns[campaign_id]
@@ -217,9 +231,8 @@ async def get_team(campaign_id: str, request: TeamRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    # Here you can use request.campaignPlan to customize the team based on the plan
-    # For now, we'll just return the dummy team
-    return {"team": DUMMY_TEAM}
+    # return {"team": DUMMY_TEAM}
+    return {"team": generate_team(request.campaignPlan)}
 
 @app.post("/api/campaign/{campaign_id}/tasks")
 async def get_tasks(campaign_id: str):

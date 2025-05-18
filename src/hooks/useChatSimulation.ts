@@ -253,6 +253,7 @@ export function useChatSimulation() {
         });
         const { team } = await teamResponse.json();
 
+        // Introduce each team member
         for (const member of team) {
           await addAgentMessage(member.id, member.introduction);
         }

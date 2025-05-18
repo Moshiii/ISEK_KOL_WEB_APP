@@ -163,6 +163,79 @@ DUMMY_POSTS = [
     "不得不说，这个真的很实用 #分享"
 ]
 
+DUMMY_SEQUENCE = [
+    {
+        'account': 'social_guru',
+        'action_type': 'follow',
+        'target_account': 'tech_influencer',
+        'post_id': None,
+        'content': None
+    },
+    {
+        'account': 'digital_marketer',
+        'action_type': 'like',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_6728',
+        'content': None
+    },
+    {
+        'account': 'tech_influencer',
+        'action_type': 'reply',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_7469',
+        'content': '这款应用解决了我的很多问题 #好物推荐'
+    },
+    {
+        'account': 'content_creator',
+        'action_type': 'like',
+        'target_account': 'content_creator',
+        'post_id': 'post_5035',
+        'content': None
+    },
+    {
+        'account': 'social_guru',
+        'action_type': 'like',
+        'target_account': 'social_guru',
+        'post_id': 'post_7886',
+        'content': None
+    },
+    {
+        'account': 'digital_marketer',
+        'action_type': 'like',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_7961',
+        'content': None
+    },
+    {
+        'account': 'tech_influencer',
+        'action_type': 'retweet',
+        'target_account': 'tech_influencer',
+        'post_id': 'post_4120',
+        'content': None
+    },
+    {
+        'account': 'content_creator',
+        'action_type': 'follow',
+        'target_account': 'digital_marketer',
+        'post_id': None,
+        'content': None
+    },
+    {
+        'account': 'social_guru',
+        'action_type': 'retweet',
+        'target_account': 'social_guru',
+        'post_id': 'post_1019',
+        'content': None
+    },
+    {
+        'account': 'digital_marketer',
+        'action_type': 'post',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_9713',
+        'content': '这款应用解决了我的很多问题 #好物推荐'
+    }
+]
+
 def generate_twitter_sequence():
     sequence = []
     accounts = TWITTER_ACCOUNTS.copy()
@@ -183,7 +256,7 @@ def generate_twitter_sequence():
             "post_id": post_id,
             "content": content
         })
-    
+    print(sequence)
     return sequence
 
 def generate_id() -> str:

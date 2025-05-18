@@ -47,7 +47,7 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH);
 const isekNodeProto = grpc.loadPackageDefinition(packageDefinition).isek_node;
 
  const RELAY_ADDRESS = '/ip4/45.32.115.124/tcp/9090/ws/p2p/12D3KooWEm7y24CfhEUAvNcQH1osnwhHt3ibGYZdKdLpezQt1r4Y'
-// const RELAY_ADDRESS = '/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWShxoTCLzDErVVnvfMtVxbXed8ok938v6Mq71bfPp7Y6y'
+// const RELAY_ADDRESS = '/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP'
 //const RELAY_ADDRESS = '/ip4/127.0.0.1/tcp/52533/ws/p2p/12D3KooWEDRrjHdsGA1kKYgUYKQtahYz2GguQB8aiFn3i5qZJAv4'
 
 class P2PNode {

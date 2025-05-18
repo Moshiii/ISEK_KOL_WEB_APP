@@ -192,18 +192,18 @@ def generate_id() -> str:
 def generate_campaign_plan(request: str) -> str:
     # Simulate a thinking process
     # TODO: later replace by openai API call
-    time.sleep(3)
+    time.sleep(1)
     return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
 def generate_team(campaign_plan: str) -> List[Dict]:
     
     # TODO: later replace by openai API call
-    time.sleep(3)
-    return DUMMY_TEAM
+    time.sleep(1)
+    return {"team": DUMMY_TEAM}
 def generate_tasks(campaign_plan: str, team_plan: List[Dict]) -> List[Dict]:
     
     # TODO: later replace by openai API call
-    time.sleep(3)
-    return DUMMY_TASKS
+    time.sleep(1)
+    return {"tasks": DUMMY_TASKS}
 
 @app.post("/api/campaign")
 async def create_campaign(campaign: CampaignRequest):

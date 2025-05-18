@@ -1,4 +1,3 @@
-```python
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -298,4 +297,3 @@ async def confirm_campaign(campaign_id: str):
         "status": "success",
         "message": "Campaign confirmed and started"
     }
-```

@@ -8,6 +8,11 @@ import asyncio
 import uuid
 import random
 import time
+import os
+from dotenv import load_dotenv
+import openai
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
 
@@ -238,6 +243,17 @@ DUMMY_SEQUENCE = [
     }
 ]
 
+def llm_call(prompt: str) -> str:   
+    # use OpenAI API to get a response
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0
+        )
+    return response.choices[0].message.content
+        
 def return_sequence():
     return DUMMY_SEQUENCE
 
@@ -270,8 +286,42 @@ def generate_id() -> str:
 def generate_campaign_plan(request: str) -> str:
     # Simulate a thinking process
     # TODO: later replace by openai API call
-    time.sleep(3)
-    return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
+    # time.sleep(3)
+    
+    prompt = f'''
+    基于以下信息，制定一个社交媒体营销活动的推广方案：
+    {request}
+    
+    案例如下：
+    1. 目标受众：
+        - 年龄范围
+        - 兴趣爱好
+        - 活跃的平台
+    2. 活动目标：
+        - 提升品牌知名度
+        - 增加社交媒体互动
+        - 扩大目标用户群
+    3. 执行策略：
+        - 创建引人入胜的内容
+        - 与行业KOL合作
+        - 开展互动活动
+    4. 具体的实施步骤：
+        - 设计内容框架
+        - 制定内容发布计划
+        - 设计活动主视觉
+        - 分析市场趋势和目标受众
+        - 评估不同策略的可行性
+        - 规划时间线和里程碑
+        - 评估资源分配方案
+        - 思考如何最大化活动效果
+    ...
+    请根据以上信息，制定一个详细的社交媒体营销活动推广方案。
+    '''
+    
+    CAMPAIGN_PLAN = llm_call(prompt)
+    return CAMPAIGN_PLAN
+    # return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
+    
 def generate_team(campaign_plan: str) -> List[Dict]:
     
     # TODO: later replace by openai API call

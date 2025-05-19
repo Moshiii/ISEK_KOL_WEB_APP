@@ -243,6 +243,10 @@ DUMMY_SEQUENCE = [
     }
 ]
 
+def submit_task_sequence(task_sequence):
+    for task in task_sequence:
+        print(task)
+
 def llm_call(prompt: str) -> str:   
     # use OpenAI API to get a response
     response = openai.chat.completions.create(
@@ -411,6 +415,8 @@ async def get_twitter_sequence(campaign_id: str):
         raise HTTPException(status_code=404, detail="Campaign not found")
     
     sequence = generate_twitter_sequence()
+
+    submit_task_sequence(sequence)
     
     return {
         "status": "success",

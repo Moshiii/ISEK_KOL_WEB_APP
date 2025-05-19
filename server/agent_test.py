@@ -8,6 +8,7 @@ from isek.node.isek_center_registry import IsekCenterRegistry
 from isek.agent.persona import Persona
 from isek.util.logger import LoggerManager, logger
 from isek.llm import OpenAIModel
+import peers
 
 Mani_info = {
     "name": "Mani",
@@ -41,4 +42,5 @@ message = {
     "query": "hello",
     "peerid": Mani_agent.peer_id
 }
-Mani_agent.send_p2p_message("/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWHQr3TCNoDYF5UXB2CsQTFKHrYvu28cuN1jAb9FCvBQoY", json.dumps(message, ensure_ascii=False))
+
+Mani_agent.send_p2p_message(peers.get_by_peer_id("12D3KooWHQr3TCNoDYF5UXB2CsQTFKHrYvu28cuN1jAb9FCvBQoY").addr, json.dumps(message, ensure_ascii=False))

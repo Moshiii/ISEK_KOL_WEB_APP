@@ -170,6 +170,31 @@ DUMMY_POSTS = [
 ]
 
 
+DUMMY_SEQUENCE_ONE = [
+    {
+        'account': 'peer_id_sparks',
+        'action_type': 'post',
+        'target_account': None,
+        'post_id': None,
+        'content': '这款应用解决了我的很多问题 #好物推荐'
+    },
+    {
+        'account': 'peer_id_moshi',
+        'action_type': 'like',
+        'target_account': 'peer_id_sparks',
+        'post_id': 'None',
+        'content': None
+    },
+    {
+        'account': 'peer_id_sylana',
+        'action_type': 'like',
+        'target_account': 'peer_id_sparks',
+        'post_id': 'None',
+        'content': None
+    },
+    
+]
+
 
 DUMMY_SEQUENCE = [
     {
@@ -244,16 +269,30 @@ DUMMY_SEQUENCE = [
     }
 ]
 
-def llm_call(prompt: str) -> str:   
+def llm_call(prompt: str, as_json: bool = False):
     # use OpenAI API to get a response
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0
+
+    if as_json:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature = 0,
+            response_format={"type": "json_object"}
         )
-    return response.choices[0].message.content
+        content = response.choices[0].message.content
+    else:    
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0
+        )
+        content = response.choices[0].message.content
+    
+    return content
         
 def return_sequence():
     return DUMMY_SEQUENCE
@@ -306,17 +345,11 @@ def generate_campaign_plan(request: str) -> str:
         - 创建引人入胜的内容
         - 与行业KOL合作
         - 开展互动活动
-    4. 具体的实施步骤：
-        - 设计内容框架
-        - 制定内容发布计划
-        - 设计活动主视觉
-        - 分析市场趋势和目标受众
-        - 评估不同策略的可行性
-        - 规划时间线和里程碑
-        - 评估资源分配方案
-        - 思考如何最大化活动效果
+    4. 预算：
+        - 预算范围
+        - 资源分配
     ...
-    请根据以上信息，制定一个详细的社交媒体营销活动推广方案。
+    请根据以上维度，制定一个详细的社交媒体营销活动推广方案。
     '''
     
     CAMPAIGN_PLAN = llm_call(prompt)
@@ -326,8 +359,49 @@ def generate_campaign_plan(request: str) -> str:
 def generate_team(campaign_plan: str) -> List[Dict]:
     
     # TODO: later replace by openai API call
-    time.sleep(1)
-    return {"team": DUMMY_TEAM}
+    # time.sleep(1)
+    prompt = f'''
+    请根据以下的活动策划信息，生成一个团队成员的角色分配方案：
+    {campaign_plan}
+    
+    下面是一个示例：
+    
+    {{
+        "result": [
+                    {{
+                        "id": "researcher",
+                        "name": "Riley",
+                        "role": "researcher",
+                        "skills": ["数据分析", "市场研究", "竞品分析"],
+                        "introduction": "作为研究分析师，我将负责深入分析目标受众、市场趋势和竞争对手。"
+                    }},
+                    {{
+                        "id": "writer",
+                        "name": "Jordan",
+                        "role": "writer",
+                        "skills": ["内容创作", "文案策划", "社媒运营"],
+                        "introduction": "我是团队的内容创作者，将确保每条推文都能吸引目标受众。"
+                    }},
+                    {{
+                        "id": "designer",
+                        "name": "Taylor",
+                        "role": "designer",
+                        "skills": ["视觉设计", "品牌设计", "UI设计"],
+                        "introduction": "作为设计师，我将为活动创作视觉内容，提升品牌形象。"
+                    }}
+                  ]
+    }}
+    请确保输出json格式正确，并包含以下信息：
+    - id: 团队成员的唯一标识符
+    - name: 团队成员的姓名
+    - role: 团队成员的角色
+    - skills: 团队成员的技能列表
+    - introduction: 团队成员的自我介绍
+    
+    '''
+    TEAM = llm_call(prompt,as_json=True)
+    return TEAM["result"]
+    # return {"team": DUMMY_TEAM}
 def generate_tasks(campaign_plan: str, team_plan: List[Dict]) -> List[Dict]:
     
     # TODO: later replace by openai API call

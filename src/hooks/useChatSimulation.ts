@@ -229,7 +229,7 @@ export function useChatSimulation() {
       for (let i = 0; i < 8; i++) {
         await addAgentMessage(
           'coordinator', 
-          PROGRESS_MESSAGES[Math.floor(Math.random() * 2 * PROGRESS_MESSAGES.length)]
+          PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
         );
       }
 

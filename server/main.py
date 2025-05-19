@@ -163,6 +163,8 @@ DUMMY_POSTS = [
     "不得不说，这个真的很实用 #分享"
 ]
 
+
+
 DUMMY_SEQUENCE = [
     {
         'account': 'social_guru',
@@ -235,6 +237,9 @@ DUMMY_SEQUENCE = [
         'content': '这款应用解决了我的很多问题 #好物推荐'
     }
 ]
+
+def return_sequence():
+    return DUMMY_SEQUENCE
 
 def generate_twitter_sequence():
     sequence = []

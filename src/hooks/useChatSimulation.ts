@@ -226,7 +226,7 @@ export function useChatSimulation() {
 
       // While waiting for the API, show progress messages
       setTypingAgent(getAgentById('coordinator'));
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         await addAgentMessage(
           'coordinator', 
           PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]

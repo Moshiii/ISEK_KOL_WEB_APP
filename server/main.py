@@ -8,7 +8,14 @@ import asyncio
 import uuid
 import random
 import time
+import openai
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+#  use chat.completions.create
 app = FastAPI()
 
 # Enable CORS
@@ -162,6 +169,80 @@ DUMMY_POSTS = [
     "I have to say, this is really practical. #Sharing"
 ]
 
+DUMMY_SEQUENCE = [
+    {
+        'account': 'social_guru',
+        'action_type': 'follow',
+        'target_account': 'tech_influencer',
+        'post_id': None,
+        'content': None
+    },
+    {
+        'account': 'digital_marketer',
+        'action_type': 'like',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_6728',
+        'content': None
+    },
+    {
+        'account': 'tech_influencer',
+        'action_type': 'reply',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_7469',
+        'content': '这款应用解决了我的很多问题 #好物推荐'
+    },
+    {
+        'account': 'content_creator',
+        'action_type': 'like',
+        'target_account': 'content_creator',
+        'post_id': 'post_5035',
+        'content': None
+    },
+    {
+        'account': 'social_guru',
+        'action_type': 'like',
+        'target_account': 'social_guru',
+        'post_id': 'post_7886',
+        'content': None
+    },
+    {
+        'account': 'digital_marketer',
+        'action_type': 'like',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_7961',
+        'content': None
+    },
+    {
+        'account': 'tech_influencer',
+        'action_type': 'retweet',
+        'target_account': 'tech_influencer',
+        'post_id': 'post_4120',
+        'content': None
+    },
+    {
+        'account': 'content_creator',
+        'action_type': 'follow',
+        'target_account': 'digital_marketer',
+        'post_id': None,
+        'content': None
+    },
+    {
+        'account': 'social_guru',
+        'action_type': 'retweet',
+        'target_account': 'social_guru',
+        'post_id': 'post_1019',
+        'content': None
+    },
+    {
+        'account': 'digital_marketer',
+        'action_type': 'post',
+        'target_account': 'digital_marketer',
+        'post_id': 'post_9713',
+        'content': '这款应用解决了我的很多问题 #好物推荐'
+    }
+]
+
+
 def generate_twitter_sequence():
     sequence = []
     accounts = TWITTER_ACCOUNTS.copy()
@@ -185,6 +266,20 @@ def generate_twitter_sequence():
     
     return sequence
 
+def llm_call(prompt: str) -> str:
+    # use openai API to get the response
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0
+    )
+    return response.choices[0].message.content
+
 def generate_id() -> str:
     return str(uuid.uuid4())
 
@@ -192,14 +287,49 @@ def generate_campaign_plan(request: str) -> str:
     # Simulate a thinking process
     # TODO: later replace by openai API call
     time.sleep(3)
-    return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
-def generate_team(campaign_plan: str) -> List[Dict]:
+    prompt = f'''
+    Based on the following requirements, please provide a detailed marketing plan:
+    {request}
+    Requirements:
+    1. Target Audience
+    2. Campaign Goals
+    3. marketing Strategies
+    4. Execution Plan
+    7. Risk Assessment
+    8. Result Assessment
+    9. Team Roles and Responsibilities
+    11. Budget and Cost Control
     
+    for example:
+    
+        1. Target Audience:
+            - Young professionals aged 25-35
+            - Interested in technology and innovation
+            - Active on social media platforms
+
+        2. Campaign Goals:
+            - Increase brand awareness
+            - Boost social media engagement
+            - Expand the target user base
+
+        3. Execution Strategies:
+            - Create engaging content
+            - Collaborate with industry KOLs
+            - Launch interactive activities
+        ...
+
+    Please provide a detailed plan, including specific implementation steps and timelines.    
+    '''
+    # CAMPAIGN_PLAN = llm_call(prompt)
+    return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
+    # return CAMPAIGN_PLAN
+
+def generate_team(campaign_plan: str) -> List[Dict]:
     # TODO: later replace by openai API call
     time.sleep(1)
     return {"team": DUMMY_TEAM}
+
 def generate_tasks(campaign_plan: str, team_plan: List[Dict]) -> List[Dict]:
-    
     # TODO: later replace by openai API call
     time.sleep(1)
     return {"tasks": DUMMY_TASKS}

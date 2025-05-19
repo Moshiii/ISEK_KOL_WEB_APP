@@ -11,6 +11,7 @@ import time
 import os
 from dotenv import load_dotenv
 import openai
+from agent_test import submit_task_sequence
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -242,10 +243,6 @@ DUMMY_SEQUENCE = [
         'content': '这款应用解决了我的很多问题 #好物推荐'
     }
 ]
-
-def submit_task_sequence(task_sequence):
-    for task in task_sequence:
-        print(task)
 
 def llm_call(prompt: str) -> str:   
     # use OpenAI API to get a response

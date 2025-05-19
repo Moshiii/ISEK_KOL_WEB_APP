@@ -35,12 +35,21 @@ Mani_agent.tool_manager.register_tools([
     Mani_agent.decompose_task,
 ])
 Mani_agent.build(daemon=True)
-time.sleep(10)
 
-message = {
-    "name": Mani_agent.persona.name,
-    "query": "hello",
-    "peerid": Mani_agent.peer_id
-}
+def submit_task_sequence(task_sequence):
+    for task in task_sequence:
+        peer_id = task['peer_id']
+        message = {
+            "name": Mani_agent.persona.name,
+            "query": "hello",
+            "peerid": Mani_agent.peer_id
+        }
+        Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(message, ensure_ascii=False))
 
-Mani_agent.send_p2p_message(peers.get_by_peer_id("12D3KooWHQr3TCNoDYF5UXB2CsQTFKHrYvu28cuN1jAb9FCvBQoY").addr, json.dumps(message, ensure_ascii=False))
+# message = {
+#     "name": Mani_agent.persona.name,
+#     "query": "hello",
+#     "peerid": Mani_agent.peer_id
+# }
+
+

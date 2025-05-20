@@ -68,7 +68,7 @@ def submit_task_sequence_impl():
         Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(message, ensure_ascii=False))
 
 
-submit_task_sequence(None)
+# submit_task_sequence(None)
 # peer_id = "12D3KooWEaq3Ao4tXwCAr27n7QPCQ5Nuuytv8vJVN41piYCz6QCP"
 # message = {
 #     "name": Mani_agent.persona.name,

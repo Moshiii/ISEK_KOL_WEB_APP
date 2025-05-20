@@ -1,5 +1,6 @@
 import json
 import time
+import threading
 
 from isek.agent.distributed_agent import DistributedAgent
 from isek.agent.distributed_agent import DistributedAgent
@@ -35,10 +36,30 @@ Mani_agent.tool_manager.register_tools([
     Mani_agent.decompose_task,
 ])
 Mani_agent.build(daemon=True)
+time.sleep(10)
 
-def submit_task_sequence(task_sequence):
+
+def submit_task_sequence(task_sequence=None):
+    server_thread = threading.Thread(target=submit_task_sequence_impl)
+    server_thread.start()
+    return True
+
+
+def submit_task_sequence_impl():
+    task_sequence = [
+        {
+            "name": Mani_agent.persona.name,
+            "query": "发一个推特，内容是“你好，ISEK",
+            "peerid": "12D3KooWGAGqSgxn2Cxr8TAiYjMRoGqkz5jQMEbBiPyHtmBFf9HE"
+        },
+        {
+            "name": Mani_agent.persona.name,
+            "query": "发一个推特，内容是“你好，ISEK",
+            "peerid": "12D3KooWC7b7sRhKAMV9sGjN7Ls8rzzop88wEAbFAoQ4pVemG3aQ"
+        }
+    ]
     for task in task_sequence:
-        peer_id = task['peer_id']
+        peer_id = task['peerid']
         message = {
             "name": Mani_agent.persona.name,
             "query": "发一个推特，内容是“你好，ISEK",
@@ -46,7 +67,8 @@ def submit_task_sequence(task_sequence):
         }
         Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(message, ensure_ascii=False))
 
-# time.sleep(10)
+
+submit_task_sequence(None)
 # peer_id = "12D3KooWEaq3Ao4tXwCAr27n7QPCQ5Nuuytv8vJVN41piYCz6QCP"
 # message = {
 #     "name": Mani_agent.persona.name,

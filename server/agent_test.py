@@ -41,11 +41,19 @@ def submit_task_sequence(task_sequence):
         peer_id = task['peer_id']
         message = {
             "name": Mani_agent.persona.name,
-            "query": "hello",
+            "query": "发一个推特，内容是“你好，ISEK",
             "peerid": Mani_agent.peer_id
         }
         Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(message, ensure_ascii=False))
 
+# time.sleep(10)
+# peer_id = "12D3KooWEaq3Ao4tXwCAr27n7QPCQ5Nuuytv8vJVN41piYCz6QCP"
+# message = {
+#     "name": Mani_agent.persona.name,
+#     "query": "发一个推特，内容是“你好，ISEK",
+#     "peerid": Mani_agent.peer_id
+# }
+# Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(message, ensure_ascii=False))
 # message = {
 #     "name": Mani_agent.persona.name,
 #     "query": "hello",

@@ -1,7 +1,7 @@
 [
   {
-    "peer_id": "12D3KooWHQr3TCNoDYF5UXB2CsQTFKHrYvu28cuN1jAb9FCvBQoY",
-    "addr": "/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWHQr3TCNoDYF5UXB2CsQTFKHrYvu28cuN1jAb9FCvBQoY",
+    "peer_id": "12D3KooWEaq3Ao4tXwCAr27n7QPCQ5Nuuytv8vJVN41piYCz6QCP",
+    "addr": "/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWEaq3Ao4tXwCAr27n7QPCQ5Nuuytv8vJVN41piYCz6QCP",
     "name": "XXX"
   }
 ]

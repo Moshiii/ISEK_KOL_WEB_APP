@@ -1,4 +1,20 @@
-export type AgentRole = 'coordinator' | 'researcher' | 'writer' | 'designer' | 'twitter-agent' | 'user';
+export type AgentRole =
+  | 'user'
+  | 'coordinator'
+  | 'researcher'
+  | 'writer'
+  | 'designer'
+  | 'developer'
+  | 'editor'
+  | 'photographer'
+  | 'videographer'
+  | 'strategist'
+  | 'analyst'
+  | 'community_manager'
+  | 'influencer'
+  | 'advisor'
+  | 'security';
+
 
 export interface Agent {
   id: string;

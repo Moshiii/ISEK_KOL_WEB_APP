@@ -168,7 +168,8 @@ DUMMY_POSTS = [
     "这款应用解决了我的很多问题 #好物推荐",
     "不得不说，这个真的很实用 #分享"
 ]
-
+TASKS =[]
+TEAM = []
 
 DUMMY_SEQUENCE_ONE = [
     {
@@ -194,7 +195,6 @@ DUMMY_SEQUENCE_ONE = [
     },
     
 ]
-
 
 DUMMY_SEQUENCE = [
     {
@@ -332,7 +332,12 @@ def generate_campaign_plan(request: str) -> str:
     基于以下信息，制定一个社交媒体营销活动的推广方案：
     {request}
     
-    案例如下：
+    注意：
+    预算要控制在20美金以内。
+    时间线（如果需要）最长只有一周。
+    
+    案例模板如下，请每个item回复一句话就可以：
+    
     1. 目标受众：
         - 年龄范围
         - 兴趣爱好
@@ -349,12 +354,14 @@ def generate_campaign_plan(request: str) -> str:
         - 预算范围
         - 资源分配
     ...
-    请根据以上维度，制定一个详细的社交媒体营销活动推广方案。
+    请根据以上维度，制定一个详细的社交媒体营销活动推广方案。 尽量不要超过300字。
     '''
     
-    CAMPAIGN_PLAN = llm_call(prompt)
+    response = llm_call(prompt)
+    global CAMPAIGN_PLAN
+    CAMPAIGN_PLAN = response
     return CAMPAIGN_PLAN
-    # return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
+    # return DUMMY_CAMPAIGN_PLAN
     
 def generate_team(campaign_plan: str) -> List[Dict]:
     
@@ -364,32 +371,52 @@ def generate_team(campaign_plan: str) -> List[Dict]:
     请根据以下的活动策划信息，生成一个团队成员的角色分配方案：
     {campaign_plan}
     
+    注意：
+    一个团队只能有一个人担任一个角色。请为每个角色分配一个团队成员，并确保每个成员的技能与角色相匹配。
+    这个团队只有执行任务的人 没有manager。 manager由 coordinator 代替， 不出现在这个团队名单当中。
+    
+    
+    下面是你可以选择的范围：
+    'researcher'
+    'writer'
+    'designer'
+    'developer'
+    'editor'
+    'photographer'
+    'videographer'
+    'strategist'
+    'analyst'
+    'community_manager'
+    'influencer'
+    'advisor'
+    'security';
+    
     下面是一个示例：
     
     {{
         "result": [
-                    {{
-                        "id": "researcher",
-                        "name": "Riley",
-                        "role": "researcher",
-                        "skills": ["数据分析", "市场研究", "竞品分析"],
-                        "introduction": "作为研究分析师，我将负责深入分析目标受众、市场趋势和竞争对手。"
-                    }},
-                    {{
-                        "id": "writer",
-                        "name": "Jordan",
-                        "role": "writer",
-                        "skills": ["内容创作", "文案策划", "社媒运营"],
-                        "introduction": "我是团队的内容创作者，将确保每条推文都能吸引目标受众。"
-                    }},
-                    {{
-                        "id": "designer",
-                        "name": "Taylor",
-                        "role": "designer",
-                        "skills": ["视觉设计", "品牌设计", "UI设计"],
-                        "introduction": "作为设计师，我将为活动创作视觉内容，提升品牌形象。"
-                    }}
-                  ]
+        {{
+            "id": "researcher",
+            "name": "Riley",
+            "role": "researcher",
+            "skills": ["数据分析", "市场研究", "竞品分析"],
+            "introduction": "作为研究分析师，我将负责深入分析目标受众、市场趋势和竞争对手。"
+        }},
+        {{
+            "id": "writer",
+            "name": "Jordan",
+            "role": "writer",
+            "skills": ["内容创作", "文案策划", "社媒运营"],
+            "introduction": "我是团队的内容创作者，将确保每条推文都能吸引目标受众。"
+        }},
+        {{
+            "id": "designer",
+            "name": "Taylor",
+            "role": "designer",
+            "skills": ["视觉设计", "品牌设计", "UI设计"],
+            "introduction": "作为设计师，我将为活动创作视觉内容，提升品牌形象。"
+        }}
+        ]
     }}
     请确保输出json格式正确，并包含以下信息：
     - id: 团队成员的唯一标识符
@@ -399,14 +426,83 @@ def generate_team(campaign_plan: str) -> List[Dict]:
     - introduction: 团队成员的自我介绍
     
     '''
-    TEAM = llm_call(prompt,as_json=True)
-    return TEAM["result"]
+    response = llm_call(prompt,as_json=True)
+    response = json.loads(response)
+    response = response["result"]
+    
+    global TEAM
+    TEAM = response
+    return {"team": TEAM}
     # return {"team": DUMMY_TEAM}
+    
+
 def generate_tasks(campaign_plan: str, team_plan: List[Dict]) -> List[Dict]:
     
     # TODO: later replace by openai API call
-    time.sleep(1)
-    return {"tasks": DUMMY_TASKS}
+    # time.sleep(1)
+    prompt = f'''
+    请根据以下的活动策划信息和团队成员角色分配方案，生成一个详细的任务列表：
+    活动策划信息：
+    {campaign_plan}
+    团队成员角色分配方案如下：
+    {team_plan}
+    
+    请为每一个角色都分配一个且只有一个任务，并确保任务的描述清晰明了。
+    请给每一个 teamplan 的 role 都分配到一个任务的assignedTo里面。
+    不要重复的任务
+    每个任务都要尽量独特
+    例如 如果团队role 有三个 那task也有三个。
+
+    例子:
+     {{
+        "result": [
+        {{
+            "id": "task1",
+            "title": "市场研究",
+            "description": "分析目标受众和竞品情况",
+            "assignedTo": "researcher",
+            "status": "pending",
+            "createdAt": none,
+            "subTasks": []
+        }},
+        {{
+            "id": "task2",
+            "title": "内容策划",
+            "description": "制定内容发布计划",
+            "assignedTo": "writer",
+            "status": "pending",
+            "createdAt": none,
+            "subTasks": []
+        }},
+        {{
+            "id": "task3",
+            "title": "视觉设计",
+            "description": "设计活动主视觉",
+            "assignedTo": "designer",
+            "status": "pending",
+            "createdAt": none,
+            "subTasks": []
+        }}
+        ]
+    }}
+    
+    请确保输出json格式正确，并包含以下信息：
+    - id: 团队成员的唯一标识符
+    - title: 任务标题
+    - description: 任务描述
+    - assignedTo: 任务分配给的团队成员
+    - status: 任务状态（例如：待处理、进行中、已完成）
+    - createdAt: 任务创建时间
+    - subTasks: 子任务列表（如果有的话）
+    '''
+    response = llm_call(prompt,as_json=True)
+    response = json.loads(response)
+    response = response["result"]
+    
+    global TASKS
+    TASKS = response
+    return {"tasks": TASKS}
+    # return {"tasks": DUMMY_TASKS}
 
 @app.post("/api/campaign")
 async def create_campaign(campaign: CampaignRequest):
@@ -454,19 +550,37 @@ async def get_tasks(campaign_id: str, request: TaskRequest):
         raise HTTPException(status_code=404, detail="Campaign not found")
     
     return generate_tasks(request.campaignPlan, request.teamPlan)
+
     return {"tasks": DUMMY_TASKS}
 
 @app.post("/api/campaign/{campaign_id}/task/{task_id}/execute")
 async def execute_task(campaign_id: str, task_id: str, execution: TaskExecutionRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    
-    task = next((t for t in DUMMY_TASKS if t["id"] == task_id), None)
+    task = next((t for t in TASKS if t["id"] == task_id), None)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+    print(task)
+    role = next((t for t in TEAM if t["role"] == task["assignedTo"]), None)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    print(role)
     
     agent_role = task["assignedTo"]
-    result = TASK_RESULTS[agent_role][execution.status]
+    
+    prompt = f'''
+    根据下面的信息，执行任务并返回结果：
+    你的名字：{role["name"]}
+    你的角色：{role["role"]}
+    你的技能：{role["skills"]}
+    你的介绍：{role["introduction"]}
+    你现在要执行的任务：{task["title"]}
+    任务描述：{task["description"]}
+    请生成200字以内的执行结果输出
+    '''
+    result = llm_call(prompt)
+    
+    # result = TASK_RESULTS[agent_role][execution.status]
     
     return {
         "status": "success",
@@ -487,7 +601,7 @@ async def get_twitter_sequence(campaign_id: str):
     
     sequence = generate_twitter_sequence()
 
-    submit_task_sequence(sequence)
+    # submit_task_sequence(sequence)
     
     return {
         "status": "success",

@@ -23,6 +23,14 @@ const TWITTER_HANDLES = [
 ];
 
 const AGENT_TASK_MESSAGES = {
+  user: [
+    "我已经准备好参与本次推广活动。",
+    "正在积极配合团队推进任务。"
+  ],
+  coordinator: [
+    "我正在协调各方资源，确保推广计划顺利进行。",
+    "正在跟进各成员的任务进度，确保按时完成。"
+  ],
   researcher: [
     "我已经开始进行市场研究，重点关注目标受众的行为特征和偏好。",
     "正在分析竞品的社交媒体策略，寻找差异化机会。"
@@ -34,6 +42,46 @@ const AGENT_TASK_MESSAGES = {
   designer: [
     "我在设计视觉主题，确保与品牌调性一致。",
     "正在创作吸引眼球的配图和动画效果。"
+  ],
+  developer: [
+    "我正在开发相关的推广工具和自动化脚本。",
+    "正在优化系统性能，确保活动顺利进行。"
+  ],
+  editor: [
+    "我正在审核和润色所有内容，确保表达准确无误。",
+    "正在校对推文，保证语法和风格统一。"
+  ],
+  photographer: [
+    "我正在拍摄高质量的活动照片。",
+    "正在挑选最佳照片用于社交媒体发布。"
+  ],
+  videographer: [
+    "我正在录制和剪辑活动视频素材。",
+    "正在制作精彩的短视频以提升传播效果。"
+  ],
+  strategist: [
+    "我正在制定整体推广策略，确保目标达成。",
+    "正在评估不同渠道的投放效果，优化资源分配。"
+  ],
+  analyst: [
+    "我正在收集和分析数据，评估活动效果。",
+    "正在生成数据报告，为后续优化提供依据。"
+  ],
+  community_manager: [
+    "我正在与社区成员互动，提升用户参与度。",
+    "正在解答用户疑问，维护良好社区氛围。"
+  ],
+  influencer: [
+    "我正在准备个人社交账号的推广内容。",
+    "正在与粉丝互动，扩大活动影响力。"
+  ],
+  advisor: [
+    "我正在为团队提供专业建议，规避潜在风险。",
+    "正在审核推广方案，确保符合行业规范。"
+  ],
+  security: [
+    "我正在检查活动的安全隐患，保障数据安全。",
+    "正在监控系统运行，防止异常行为发生。"
   ]
 };
 
@@ -226,7 +274,7 @@ export function useChatSimulation() {
 
       // While waiting for the API, show progress messages
       setTypingAgent(getAgentById('coordinator'));
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 2; i++) {
         await addAgentMessage(
           'coordinator', 
           PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]

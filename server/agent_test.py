@@ -62,6 +62,13 @@ def submit_task_sequence_impl():
     #     peer_id = task['peerid']
     #     Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(task, ensure_ascii=False))
     for peer_id, peer in peers.get_all_peers().items():
+        
+        
+        # 'account': 'peer_id_moshi',
+        # 'action_type': 'like',
+        # 'target_account': 'peer_id_sparks',
+        # 'post_id': 'None',
+        # 'content': None
         task = {
             "name": Mani_agent.persona.name,
             "query": "发一个推特，内容是“你好，ISEK",

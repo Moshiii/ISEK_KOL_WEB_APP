@@ -193,8 +193,9 @@ DUMMY_SEQUENCE_ONE = [
         'post_id': 'None',
         'content': None
     },
-    
 ]
+
+# submit_task_sequence(DUMMY_SEQUENCE_ONE)
 
 DUMMY_SEQUENCE = [
     {
@@ -569,14 +570,14 @@ async def execute_task(campaign_id: str, task_id: str, execution: TaskExecutionR
     agent_role = task["assignedTo"]
     
     prompt = f'''
-    根据下面的信息，执行任务并返回结果：
+    根据下面的信息，制定计划并返回计划方案：
     你的名字：{role["name"]}
     你的角色：{role["role"]}
     你的技能：{role["skills"]}
     你的介绍：{role["introduction"]}
     你现在要执行的任务：{task["title"]}
     任务描述：{task["description"]}
-    请生成200字以内的执行结果输出
+    请生成200字以内的计划，注意，你在制定计划， 计划内的事情还没发生，请用计划的语气来输出，请不要捏造不存在的事实，请最大程度避免幻觉。
     '''
     result = llm_call(prompt)
     

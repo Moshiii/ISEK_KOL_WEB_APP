@@ -3,16 +3,36 @@ import { Message, Task, Campaign, Agent, CampaignMetrics } from '../types';
 import { getAgentById } from '../data/agents';
 
 const PROGRESS_MESSAGES = [
-  "让我思考一下最佳的执行方案...",
-  "正在分析市场趋势和目标受众...",
-  "正在评估不同策略的可行性...",
-  "正在设计任务分配方案...",
-  "正在制定详细的执行计划...",
-  "正在考虑各种可能的营销角度...",
-  "正在规划时间线和里程碑...",
-  "正在评估资源分配方案...",
-  "正在思考如何最大化活动效果...",
-  "正在制定具体的实施步骤..."
+  "正在执行中，请稍候...",
+  "团队正在协作推进任务...",
+  "正在处理相关工作流程...",
+  "正在同步各项任务进度...",
+  "正在落实推广计划的细节...",
+  "正在协调资源以支持执行...",
+  "正在持续推进项目进展...",
+  "正在监控执行过程中的情况...",
+  "正在确保各环节顺利进行...",
+  "正在跟进任务完成情况...",
+  "正在分析数据以优化流程...",
+  "正在准备相关材料...",
+  "正在与合作伙伴沟通细节...",
+  "正在审核内容以确保质量...",
+  "正在调整策略以适应变化...",
+  "正在收集反馈以改进方案...",
+  "正在分配任务给团队成员...",
+  "正在检查系统运行状态...",
+  "正在整理项目文档...",
+  "正在确认各项资源到位...",
+  "正在优化执行流程...",
+  "正在解决遇到的问题...",
+  "正在汇总阶段性成果...",
+  "正在安排后续工作计划...",
+  "正在测试相关功能模块...",
+  "正在准备汇报材料...",
+  "正在梳理项目进度节点...",
+  "正在与客户保持沟通...",
+  "正在评估当前执行效果...",
+  "正在总结经验以便复盘..."
 ];
 
 const TWITTER_HANDLES = [
@@ -112,7 +132,7 @@ function generateId(): string {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getRandomDelay = () => Math.random() * 500 + 500; // 500-1000ms
+const getRandomDelay = () => Math.random() * 500 + 1000; // 500-1000ms
 
 export function useChatSimulation() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -218,18 +238,9 @@ export function useChatSimulation() {
 
   const executeAgentTask = async (task: Task) => {
     const messages = AGENT_TASK_MESSAGES[task.assignedTo as keyof typeof AGENT_TASK_MESSAGES];
-    
-    // Start task
-    await updateTaskStatus(task.id, 'in-progress');
-    await addAgentMessage(task.assignedTo, messages[0]);
-    await delay(getRandomDelay());
-    
-    // Progress update
-    await addAgentMessage(task.assignedTo, messages[1]);
-    await delay(getRandomDelay());
-    
+
     // Complete task - get completion message from backend
-    const apiPromise = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
+    const apiPromise = fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -239,9 +250,20 @@ export function useChatSimulation() {
       })
     });
 
+        
+    // Start task
+    await updateTaskStatus(task.id, 'in-progress');
+    await addAgentMessage(task.assignedTo, messages[0]);
+    await delay(getRandomDelay());
+    
+    // Progress update
+    await addAgentMessage(task.assignedTo, messages[1]);
+    await delay(getRandomDelay());
+    
+
     // While waiting for the API, show progress messages
     setTypingAgent(getAgentById(task.assignedTo));
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       await addAgentMessage(
         task.assignedTo, 
         PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
@@ -274,7 +296,7 @@ export function useChatSimulation() {
 
       // While waiting for the API, show progress messages
       setTypingAgent(getAgentById('coordinator'));
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 7; i++) {
         await addAgentMessage(
           'coordinator', 
           PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
@@ -324,6 +346,15 @@ export function useChatSimulation() {
           })
         });
 
+        // While waiting for the API, show progress messages
+        setTypingAgent(getAgentById('coordinator'));
+        for (let i = 0; i < 7; i++) {
+          await addAgentMessage(
+            'coordinator', 
+            PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
+          );
+        }
+
         // Show progress while waiting
         setTypingAgent(getAgentById('coordinator'));
         await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
@@ -341,6 +372,15 @@ export function useChatSimulation() {
             teamPlan: team
           })
         });
+
+        // While waiting for the API, show progress messages
+        setTypingAgent(getAgentById('coordinator'));
+        for (let i = 0; i < 7; i++) {
+          await addAgentMessage(
+            'coordinator', 
+            PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
+          );
+        }
 
         // Introduce each team member while waiting for tasks
         if (Array.isArray(team)) {
@@ -367,8 +407,6 @@ export function useChatSimulation() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         });
-
-        await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
 
         const sequenceResponse = await sequencePromise;
         const { sequence } = await sequenceResponse.json();

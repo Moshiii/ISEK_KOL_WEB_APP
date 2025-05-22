@@ -46,35 +46,37 @@ def submit_task_sequence(task_sequence=None):
 
 
 def submit_task_sequence_impl():
-    task_sequence = [
-        {
+    # task_sequence = [
+    #     {
+    #         "name": Mani_agent.persona.name,
+    #         "query": "发一个推特，内容是“你好，ISEK",
+    #         "peerid": "12D3KooWGAGqSgxn2Cxr8TAiYjMRoGqkz5jQMEbBiPyHtmBFf9HE"
+    #     },
+    #     {
+    #         "name": Mani_agent.persona.name,
+    #         "query": "发一个推特，内容是“你好，ISEK",
+    #         "peerid": "12D3KooWC7b7sRhKAMV9sGjN7Ls8rzzop88wEAbFAoQ4pVemG3aQ"
+    #     }
+    # ]
+    # for task in task_sequence:
+    #     peer_id = task['peerid']
+    #     Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(task, ensure_ascii=False))
+    for peer_id, peer in peers.get_all_peers().items():
+        task = {
             "name": Mani_agent.persona.name,
             "query": "发一个推特，内容是“你好，ISEK",
-            "peerid": "12D3KooWGAGqSgxn2Cxr8TAiYjMRoGqkz5jQMEbBiPyHtmBFf9HE"
-        },
-        {
-            "name": Mani_agent.persona.name,
-            "query": "发一个推特，内容是“你好，ISEK",
-            "peerid": "12D3KooWC7b7sRhKAMV9sGjN7Ls8rzzop88wEAbFAoQ4pVemG3aQ"
+            "peerid": peer_id
         }
-    ]
-    for task in task_sequence:
-        peer_id = task['peerid']
-        Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(task, ensure_ascii=False))
+        Mani_agent.send_p2p_message(peer.addr, json.dumps(task, ensure_ascii=False))
 
 
 # submit_task_sequence(None)
-# peer_id = "12D3KooWEaq3Ao4tXwCAr27n7QPCQ5Nuuytv8vJVN41piYCz6QCP"
+# peer_id = "12D3KooWJppwDcvBVJA5ruh6yC2th92d6RW4m6v51KLw62hSxxBQ"
 # message = {
 #     "name": Mani_agent.persona.name,
 #     "query": "发一个推特，内容是“你好，ISEK",
 #     "peerid": Mani_agent.peer_id
 # }
 # Mani_agent.send_p2p_message(peers.get_by_peer_id(peer_id).addr, json.dumps(message, ensure_ascii=False))
-# message = {
-#     "name": Mani_agent.persona.name,
-#     "query": "hello",
-#     "peerid": Mani_agent.peer_id
-# }
 
 

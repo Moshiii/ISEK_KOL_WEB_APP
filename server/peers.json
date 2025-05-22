@@ -1,12 +1,7 @@
 [
   {
-    "peer_id": "12D3KooWC7b7sRhKAMV9sGjN7Ls8rzzop88wEAbFAoQ4pVemG3aQ",
-    "addr": "/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWC7b7sRhKAMV9sGjN7Ls8rzzop88wEAbFAoQ4pVemG3aQ",
-    "name": "XXX"
-  },
-  {
-    "peer_id": "12D3KooWGAGqSgxn2Cxr8TAiYjMRoGqkz5jQMEbBiPyHtmBFf9HE",
-    "addr": "/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWGAGqSgxn2Cxr8TAiYjMRoGqkz5jQMEbBiPyHtmBFf9HE",
+    "peer_id": "12D3KooWJppwDcvBVJA5ruh6yC2th92d6RW4m6v51KLw62hSxxBQ",
+    "addr": "/ip4/47.236.116.81/tcp/43923/ws/p2p/12D3KooWDxDRwD5wyQ1hdZpioaEEWofuJm8sEzPghDynMJM1RCsP/p2p-circuit/p2p/12D3KooWJppwDcvBVJA5ruh6yC2th92d6RW4m6v51KLw62hSxxBQ",
     "name": "XXX"
   }
 ]

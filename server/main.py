@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -15,7 +16,6 @@ import os
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-#  use chat.completions.create
 app = FastAPI()
 
 # Enable CORS
@@ -110,6 +110,7 @@ DUMMY_TEAM = [
         "introduction": "As the designer, I will create visual content for the campaign to enhance the brand image."
     }
 ]
+
 DUMMY_TASKS = [
     {
         "id": "task1",
@@ -155,190 +156,51 @@ TASK_RESULTS = {
     }
 }
 
-TWITTER_ACCOUNTS = [
-    "tech_influencer",
-    "digital_marketer",
-    "social_guru",
-    "content_creator"
-]
+async def stream_thinking_messages():
+    for message in THINKING_MESSAGES:
+        yield json.dumps({"type": "thinking", "content": message}) + "\n"
+        await asyncio.sleep(random.uniform(0.5, 1.5))
 
-DUMMY_POSTS = [
-    "This product is really great! Highly recommend everyone to try it. #Innovation",
-    "The user experience exceeded my expectations, sharing with everyone. #Recommended",
-    "This app solved many of my problems. #ProductRecommendation",
-    "I have to say, this is really practical. #Sharing"
-]
-
-DUMMY_SEQUENCE = [
-    {
-        'account': 'social_guru',
-        'action_type': 'follow',
-        'target_account': 'tech_influencer',
-        'post_id': None,
-        'content': None
-    },
-    {
-        'account': 'digital_marketer',
-        'action_type': 'like',
-        'target_account': 'digital_marketer',
-        'post_id': 'post_6728',
-        'content': None
-    },
-    {
-        'account': 'tech_influencer',
-        'action_type': 'reply',
-        'target_account': 'digital_marketer',
-        'post_id': 'post_7469',
-        'content': '这款应用解决了我的很多问题 #好物推荐'
-    },
-    {
-        'account': 'content_creator',
-        'action_type': 'like',
-        'target_account': 'content_creator',
-        'post_id': 'post_5035',
-        'content': None
-    },
-    {
-        'account': 'social_guru',
-        'action_type': 'like',
-        'target_account': 'social_guru',
-        'post_id': 'post_7886',
-        'content': None
-    },
-    {
-        'account': 'digital_marketer',
-        'action_type': 'like',
-        'target_account': 'digital_marketer',
-        'post_id': 'post_7961',
-        'content': None
-    },
-    {
-        'account': 'tech_influencer',
-        'action_type': 'retweet',
-        'target_account': 'tech_influencer',
-        'post_id': 'post_4120',
-        'content': None
-    },
-    {
-        'account': 'content_creator',
-        'action_type': 'follow',
-        'target_account': 'digital_marketer',
-        'post_id': None,
-        'content': None
-    },
-    {
-        'account': 'social_guru',
-        'action_type': 'retweet',
-        'target_account': 'social_guru',
-        'post_id': 'post_1019',
-        'content': None
-    },
-    {
-        'account': 'digital_marketer',
-        'action_type': 'post',
-        'target_account': 'digital_marketer',
-        'post_id': 'post_9713',
-        'content': '这款应用解决了我的很多问题 #好物推荐'
-    }
-]
-
-
-def generate_twitter_sequence():
-    sequence = []
-    accounts = TWITTER_ACCOUNTS.copy()
-    random.shuffle(accounts)
+async def stream_campaign_plan():
+    # Simulate streaming the campaign plan word by word
+    words = DUMMY_CAMPAIGN_PLAN.split()
+    current_sentence = []
     
-    for i in range(10):
-        
-        action = random.choice(['post', 'like', 'reply', 'retweet', 'follow'])
-        account = accounts[i % len(accounts)]
-        target = random.choice([acc for acc in accounts if acc != account])
-        post_id = f"post_{random.randint(1000, 9999)}" if action != 'follow' else None
-        content = random.choice(DUMMY_POSTS) if action in ['post', 'reply'] else None
-        
-        sequence.append({
-            "account": account,
-            "action_type": action,
-            "target_account": target if action in ['follow', 'reply'] else account,
-            "post_id": post_id,
-            "content": content
-        })
+    for word in words:
+        current_sentence.append(word)
+        if word.endswith(('.', ':', '?', '!')):
+            yield json.dumps({
+                "type": "content",
+                "content": ' '.join(current_sentence)
+            }) + "\n"
+            current_sentence = []
+            await asyncio.sleep(0.1)
     
-    return sequence
+    if current_sentence:
+        yield json.dumps({
+            "type": "content",
+            "content": ' '.join(current_sentence)
+        }) + "\n"
 
-def llm_call(prompt: str) -> str:
-    # use openai API to get the response
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        temperature=0
-    )
-    return response.choices[0].message.content
+async def stream_team_introductions():
+    for member in DUMMY_TEAM:
+        yield json.dumps({
+            "type": "team_member",
+            "content": member
+        }) + "\n"
+        await asyncio.sleep(1)
 
-def generate_id() -> str:
-    return str(uuid.uuid4())
-
-def generate_campaign_plan(request: str) -> str:
-    # Simulate a thinking process
-    # TODO: later replace by openai API call
-    time.sleep(3)
-    prompt = f'''
-    Based on the following requirements, please provide a detailed marketing plan:
-    {request}
-    Requirements:
-    1. Target Audience
-    2. Campaign Goals
-    3. marketing Strategies
-    4. Execution Plan
-    7. Risk Assessment
-    8. Result Assessment
-    9. Team Roles and Responsibilities
-    11. Budget and Cost Control
-    
-    for example:
-    
-        1. Target Audience:
-            - Young professionals aged 25-35
-            - Interested in technology and innovation
-            - Active on social media platforms
-
-        2. Campaign Goals:
-            - Increase brand awareness
-            - Boost social media engagement
-            - Expand the target user base
-
-        3. Execution Strategies:
-            - Create engaging content
-            - Collaborate with industry KOLs
-            - Launch interactive activities
-        ...
-
-    Please provide a detailed plan, including specific implementation steps and timelines.    
-    '''
-    # CAMPAIGN_PLAN = llm_call(prompt)
-    return random.choice(THINKING_MESSAGES) + "\n\n" + DUMMY_CAMPAIGN_PLAN
-    # return CAMPAIGN_PLAN
-
-def generate_team(campaign_plan: str) -> List[Dict]:
-    # TODO: later replace by openai API call
-    time.sleep(1)
-    return {"team": DUMMY_TEAM}
-
-def generate_tasks(campaign_plan: str, team_plan: List[Dict]) -> List[Dict]:
-    # TODO: later replace by openai API call
-    time.sleep(1)
-    return {"tasks": DUMMY_TASKS}
+async def stream_task_assignments():
+    for task in DUMMY_TASKS:
+        yield json.dumps({
+            "type": "task",
+            "content": task
+        }) + "\n"
+        await asyncio.sleep(1)
 
 @app.post("/api/campaign")
 async def create_campaign(campaign: CampaignRequest):
-    campaign_id = generate_id()
-    
-    # Initialize campaign
+    campaign_id = str(uuid.uuid4())
     campaigns[campaign_id] = {
         "id": campaign_id,
         "request": campaign.request,
@@ -348,39 +210,60 @@ async def create_campaign(campaign: CampaignRequest):
         "createdAt": datetime.now().isoformat(),
         "info_gathering_complete": False
     }
-    
-    # Add initial plan
-    campaigns[campaign_id]["messages"].append({
-        "id": generate_id(),
-        "agentId": "coordinator",
-        "content": generate_campaign_plan(campaign.request),
-        # "content": DUMMY_CAMPAIGN_PLAN,
-        "timestamp": datetime.now().isoformat(),
-        "type": "message"
-    })
-    time.sleep(3)
-    return {
-        "status": "success",
-        "campaign": campaigns[campaign_id]
-    }
+
+    async def generate():
+        # Stream thinking messages
+        async for message in stream_thinking_messages():
+            yield message
+
+        # Stream campaign plan
+        async for content in stream_campaign_plan():
+            yield content
+
+        # Send final campaign data
+        yield json.dumps({
+            "type": "complete",
+            "content": {
+                "status": "success",
+                "campaign": campaigns[campaign_id]
+            }
+        })
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.post("/api/campaign/{campaign_id}/team")
 async def get_team(campaign_id: str, request: TeamRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    # Store the campaign plan for later use
     campaigns[campaign_id]["campaign_plan"] = request.campaignPlan
-    return generate_team(request.campaignPlan)
-    return {"team": DUMMY_TEAM}
+
+    async def generate():
+        async for member in stream_team_introductions():
+            yield member
+        
+        yield json.dumps({
+            "type": "complete",
+            "content": {"team": DUMMY_TEAM}
+        })
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.post("/api/campaign/{campaign_id}/tasks")
 async def get_tasks(campaign_id: str, request: TaskRequest):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    return generate_tasks(request.campaignPlan, request.teamPlan)
-    return {"tasks": DUMMY_TASKS}
+    async def generate():
+        async for task in stream_task_assignments():
+            yield task
+        
+        yield json.dumps({
+            "type": "complete",
+            "content": {"tasks": DUMMY_TASKS}
+        })
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.post("/api/campaign/{campaign_id}/task/{task_id}/execute")
 async def execute_task(campaign_id: str, task_id: str, execution: TaskExecutionRequest):
@@ -393,12 +276,43 @@ async def execute_task(campaign_id: str, task_id: str, execution: TaskExecutionR
     
     agent_role = task["assignedTo"]
     result = TASK_RESULTS[agent_role][execution.status]
-    
-    return {
-        "status": "success",
-        "result": result,
-        "taskStatus": execution.status
-    }
+
+    async def generate():
+        # Stream thinking messages first
+        async for message in stream_thinking_messages():
+            yield message
+
+        # Stream the actual result
+        words = result.split()
+        current_sentence = []
+        
+        for word in words:
+            current_sentence.append(word)
+            if word.endswith(('.', ':', '?', '!')):
+                yield json.dumps({
+                    "type": "content",
+                    "content": ' '.join(current_sentence)
+                }) + "\n"
+                current_sentence = []
+                await asyncio.sleep(0.1)
+        
+        if current_sentence:
+            yield json.dumps({
+                "type": "content",
+                "content": ' '.join(current_sentence)
+            }) + "\n"
+
+        # Send completion status
+        yield json.dumps({
+            "type": "complete",
+            "content": {
+                "status": "success",
+                "result": result,
+                "taskStatus": execution.status
+            }
+        })
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.get("/api/campaign/{campaign_id}")
 async def get_campaign(campaign_id: str):
@@ -411,12 +325,44 @@ async def get_twitter_sequence(campaign_id: str):
     if campaign_id not in campaigns:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    sequence = generate_twitter_sequence()
+    sequence = [
+        {
+            'account': 'social_guru',
+            'action_type': 'post',
+            'target_account': 'social_guru',
+            'content': 'Excited to share this amazing product! #Innovation'
+        },
+        {
+            'account': 'tech_influencer',
+            'action_type': 'like',
+            'target_account': 'social_guru',
+            'post_id': 'post_1234'
+        },
+        {
+            'account': 'digital_marketer',
+            'action_type': 'retweet',
+            'target_account': 'social_guru',
+            'post_id': 'post_1234'
+        }
+    ]
     
-    return {
-        "status": "success",
-        "sequence": sequence
-    }
+    async def generate():
+        for action in sequence:
+            yield json.dumps({
+                "type": "action",
+                "content": action
+            }) + "\n"
+            await asyncio.sleep(0.5)
+        
+        yield json.dumps({
+            "type": "complete",
+            "content": {
+                "status": "success",
+                "sequence": sequence
+            }
+        })
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.post("/api/campaign/{campaign_id}/confirm")
 async def confirm_campaign(campaign_id: str):

@@ -64,7 +64,32 @@ function generateId(): string {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getRandomDelay = () => Math.random() * 500 + 500; // 500-1000ms
+async function* readStream(response: Response) {
+  const reader = response.body?.getReader();
+  if (!reader) return;
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.trim()) {
+          yield JSON.parse(line);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 export function useChatSimulation() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -150,7 +175,7 @@ export function useChatSimulation() {
 
   const addAgentMessage = async (agentId: string, content: string, type: Message['type'] = 'message', taskId?: string) => {
     setTypingAgent(getAgentById(agentId));
-    await delay(getRandomDelay());
+    await delay(100); // Reduced delay for streaming
     await addMessage({
       id: generateId(),
       agentId,
@@ -168,47 +193,9 @@ export function useChatSimulation() {
     ));
   };
 
-  const executeAgentTask = async (task: Task) => {
-    const messages = AGENT_TASK_MESSAGES[task.assignedTo as keyof typeof AGENT_TASK_MESSAGES];
-    
-    // Start task
-    await updateTaskStatus(task.id, 'in-progress');
-    await addAgentMessage(task.assignedTo, messages[0]);
-    await delay(getRandomDelay());
-    
-    // Progress update
-    await addAgentMessage(task.assignedTo, messages[1]);
-    await delay(getRandomDelay());
-    
-    // Complete task - get completion message from backend
-    const apiPromise = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: 'completed'
-      })
-    });
-
-    // While waiting for the API, show progress messages
-    setTypingAgent(getAgentById(task.assignedTo));
-    for (let i = 0; i < 3; i++) {
-      await addAgentMessage(
-        task.assignedTo, 
-        PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
-      );
-    }
-
-    const response = await apiPromise;
-    const result = await response.json();
-    await updateTaskStatus(task.id, result.taskStatus);
-    await addAgentMessage(task.assignedTo, result.result);
-  };
-
   const startCampaign = async (request: string) => {
     try {
-      // First, add the user's message
+      // Add user message
       await addMessage({
         id: generateId(),
         agentId: 'user',
@@ -217,35 +204,58 @@ export function useChatSimulation() {
         type: 'message'
       });
 
-      // Start the API call immediately
-      const apiPromise = fetch('http://localhost:8000/api/campaign', {
+      const response = await fetch('http://localhost:8000/api/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request })
       });
 
-      // While waiting for the API, show progress messages
       setTypingAgent(getAgentById('coordinator'));
-      for (let i = 0; i < 5; i++) {
-        await addAgentMessage(
-          'coordinator', 
-          PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]
-        );
+
+      for await (const data of readStream(response)) {
+        if (data.type === 'thinking') {
+          await addAgentMessage('coordinator', data.content);
+        } else if (data.type === 'content') {
+          await addAgentMessage('coordinator', data.content);
+        } else if (data.type === 'complete') {
+          setCampaign(data.content.campaign);
+          await addAgentMessage('coordinator', 'What do you think of this plan? If you agree, please reply with "confirm" to start execution.');
+          setTypingAgent(null);
+        }
       }
-
-      // Now await the API response
-      const response = await apiPromise;
-      const result = await response.json();
-      setCampaign(result.campaign);
-      setTypingAgent(null);
-
-      // Show the campaign plan
-      await addAgentMessage('coordinator', result.campaign.messages[0].content);
-      await addAgentMessage('coordinator', 'What do you think of this plan? If you agree, please reply with "confirm" to start execution.');
     } catch (error) {
       console.error('Error:', error);
       setTypingAgent(null);
       await addAgentMessage('coordinator', 'Sorry, there was an error processing your request. Please try again later.');
+    }
+  };
+
+  const executeTask = async (task: Task) => {
+    try {
+      await updateTaskStatus(task.id, 'in-progress');
+      
+      const response = await fetch(`http://localhost:8000/api/campaign/${campaign?.id}/task/${task.id}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' })
+      });
+
+      setTypingAgent(getAgentById(task.assignedTo));
+
+      for await (const data of readStream(response)) {
+        if (data.type === 'thinking') {
+          await addAgentMessage(task.assignedTo, data.content);
+        } else if (data.type === 'content') {
+          await addAgentMessage(task.assignedTo, data.content);
+        } else if (data.type === 'complete') {
+          await updateTaskStatus(task.id, data.content.taskStatus);
+          setTypingAgent(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setTypingAgent(null);
+      await addAgentMessage(task.assignedTo, 'Sorry, there was an error executing the task.');
     }
   };
 
@@ -262,135 +272,126 @@ export function useChatSimulation() {
 
     try {
       if (!awaitingConfirmation) {
-      if (content.trim() !== 'confirm') {
-        await addAgentMessage('coordinator', 'Please reply with "confirm" to start executing the promotion plan.');
-        return;
-      }
-
-      // Start the team API call immediately
-      const teamPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-        campaignPlan: campaign.messages[0].content 
-        })
-      });
-
-      // Show progress while waiting
-      setTypingAgent(getAgentById('coordinator'));
-      await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-
-      const teamResponse = await teamPromise;
-      const { team } = await teamResponse.json();
-      setTypingAgent(null);
-
-      // Introduce team members while starting tasks API call
-      const tasksPromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-        campaignPlan: campaign.messages[0].content,
-        teamPlan: team
-        })
-      });
-
-      // Introduce each team member while waiting for tasks
-      if (Array.isArray(team)) {
-        for (const member of team) {
-        await addAgentMessage(member.id, member.introduction);
-        }
-      }
-
-      const tasksResponse = await tasksPromise;
-      const { tasks: newTasks } = await tasksResponse.json();
-      
-      // Add and execute tasks
-      for (const task of newTasks) {
-        const agent = getAgentById(task.assignedTo);
-        await addAgentMessage('coordinator', `${agent.name} will be responsible for ${task.title}: ${task.description}`, 'task-assignment', task.id);
-        setTasks(prev => [...prev, task]);
-        await delay(500);
-        await executeAgentTask(task);
-      }
-
-      // Start sequence API call while showing progress
-      const sequencePromise = fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-
-      await addAgentMessage('coordinator', PROGRESS_MESSAGES[Math.floor(Math.random() * PROGRESS_MESSAGES.length)]);
-
-      const sequenceResponse = await sequencePromise;
-      const { sequence } = await sequenceResponse.json();
-      setTwitterSequence(sequence);
-
-      await addAgentMessage('coordinator', 'We have created a detailed promotion plan, which you can view in the task panel on the right.');
-      await addAgentMessage('coordinator', 'If you agree with the promotion plan, please reply "confirm" again to start execution.');
-      setAwaitingConfirmation(true);
-      } else {
-      if (content.trim() !== 'confirm') {
-        await addAgentMessage('coordinator', 'If you agree with this promotion plan, please reply "confirm" to start execution.');
-        return;
-      }
-      if (metricsInterval) {
-        clearInterval(metricsInterval);
-      }
-
-      const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-
-      if (confirmResponse.ok) {
-        await addAgentMessage('coordinator', 'Great! We are now starting to execute the promotion plan.');
-        setStatus('in-progress');
-        setMetricsUpdateCount(0);
-
-        // Execute promotion sequence and update metrics
-        for (const action of twitterSequence) {
-        const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
-          action.account,
-          action.target_account || action.account,
-          action.content || ''
-        );
-        await addAgentMessage('coordinator', message);
-        updateMetricsForAction(action);
-        await delay(500);
+        if (content.trim() !== 'confirm') {
+          await addAgentMessage('coordinator', 'Please reply with "confirm" to start executing the promotion plan.');
+          return;
         }
 
-        // Continue random growth for a while
-        const interval = setInterval(() => {
-        setMetricsUpdateCount(prev => prev + 1);
-        setMetrics(prev => {
-          const newAccounts = prev.twitterAccounts.map(account => ({
-          ...account,
-          likesCount: account.likesCount + Math.floor(Math.random() * 2),
-          retweetsCount: account.retweetsCount + Math.floor(Math.random() * 1)
-          }));
-
-          const totals = newAccounts.reduce((acc, account) => ({
-          totalPosts: acc.totalPosts + account.postsCount,
-          totalLikes: acc.totalLikes + account.likesCount,
-          totalReplies: acc.totalReplies + account.repliesCount,
-          totalRetweets: acc.totalRetweets + account.retweetsCount
-          }), {
-          totalPosts: 0,
-          totalLikes: 0,
-          totalReplies: 0,
-          totalRetweets: 0
-          });
-
-          return {
-          ...totals,
-          twitterAccounts: newAccounts
-          };
+        const teamResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/team`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignPlan: campaign.messages[0].content })
         });
-        }, 500);
-        setMetricsInterval(interval);
-      }
+
+        setTypingAgent(getAgentById('coordinator'));
+
+        // Process team stream
+        for await (const data of readStream(teamResponse)) {
+          if (data.type === 'team_member') {
+            await addAgentMessage(data.content.id, data.content.introduction);
+          }
+        }
+
+        const tasksResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignPlan: campaign.messages[0].content,
+            teamPlan: DUMMY_TEAM
+          })
+        });
+
+        // Process tasks stream
+        for await (const data of readStream(tasksResponse)) {
+          if (data.type === 'task') {
+            const task = data.content;
+            const agent = getAgentById(task.assignedTo);
+            await addAgentMessage(
+              'coordinator',
+              `${agent.name} will be responsible for ${task.title}: ${task.description}`,
+              'task-assignment',
+              task.id
+            );
+            setTasks(prev => [...prev, task]);
+            await executeTask(task);
+          }
+        }
+
+        const sequenceResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/twitter-sequence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        // Process sequence stream
+        let sequence: any[] = [];
+        for await (const data of readStream(sequenceResponse)) {
+          if (data.type === 'action') {
+            sequence.push(data.content);
+          } else if (data.type === 'complete') {
+            setTwitterSequence(data.content.sequence);
+          }
+        }
+
+        await addAgentMessage('coordinator', 'We have created a detailed promotion plan, which you can view in the task panel on the right.');
+        await addAgentMessage('coordinator', 'If you agree with the promotion plan, please reply "confirm" again to start execution.');
+        setAwaitingConfirmation(true);
+      } else {
+        if (content.trim() !== 'confirm') {
+          await addAgentMessage('coordinator', 'If you agree with this promotion plan, please reply "confirm" to start execution.');
+          return;
+        }
+
+        const confirmResponse = await fetch(`http://localhost:8000/api/campaign/${campaign.id}/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (confirmResponse.ok) {
+          await addAgentMessage('coordinator', 'Great! We are now starting to execute the promotion plan.');
+          setStatus('in-progress');
+
+          // Execute promotion sequence
+          for (const action of twitterSequence) {
+            const message = TWITTER_ACTION_MESSAGES[action.action_type as keyof typeof TWITTER_ACTION_MESSAGES](
+              action.account,
+              action.target_account || action.account,
+              action.content || ''
+            );
+            await addAgentMessage('coordinator', message);
+            updateMetricsForAction(action);
+            await delay(500);
+          }
+
+          // Continue random growth
+          const interval = setInterval(() => {
+            setMetricsUpdateCount(prev => prev + 1);
+            setMetrics(prev => {
+              const newAccounts = prev.twitterAccounts.map(account => ({
+                ...account,
+                likesCount: account.likesCount + Math.floor(Math.random() * 2),
+                retweetsCount: account.retweetsCount + Math.floor(Math.random() * 1)
+              }));
+
+              const totals = newAccounts.reduce((acc, account) => ({
+                totalPosts: acc.totalPosts + account.postsCount,
+                totalLikes: acc.totalLikes + account.likesCount,
+                totalReplies: acc.totalReplies + account.repliesCount,
+                totalRetweets: acc.totalRetweets + account.retweetsCount
+              }), {
+                totalPosts: 0,
+                totalLikes: 0,
+                totalReplies: 0,
+                totalRetweets: 0
+              });
+
+              return {
+                ...totals,
+                twitterAccounts: newAccounts
+              };
+            });
+          }, 500);
+          setMetricsInterval(interval);
+        }
       }
     } catch (error) {
       console.error('Error:', error);

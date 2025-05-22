@@ -35,3 +35,6 @@ def get_by_peer_id(peer_id):
     peer_dict = Peer.load_dict_from_file()
     return peer_dict.get(peer_id, None)
 
+
+def get_all_peers():
+    return Peer.load_dict_from_file()
